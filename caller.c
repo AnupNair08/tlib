@@ -1,7 +1,7 @@
 #include "thread.h"
 #include<unistd.h>
 #include<stdio.h>
-
+#include <sys/types.h>
 /**
  * @brief Routine run by the thread
  * 
@@ -24,7 +24,15 @@ int func(void *a){
  * @return int 
  */
 int main(){
-    thread t;
-    create(&t,func,NULL,"argument");
+    thread t,t1;
+    printf("Process ID : %d\n",getpid());
+    pid_t tid = create(&t,func,NULL,"argument");
+    pid_t tid2 = create(&t1,func,NULL,"argument");
+
+    getchar();
+    printf("Thread ID : %d\n",tid);
+    printf("Thread ID : %d\n",tid2);
+
+    
     return 0;
 }

@@ -2,3 +2,5 @@ doxygen/
 tests/
 *.o
 tout
+resources/
+.vscode

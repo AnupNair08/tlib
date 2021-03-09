@@ -4,15 +4,20 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include<errno.h>
+#include<wait.h>
 #include "thread.h"
+#include"tlibtypes.h"
 
 
 int create(thread *t, void * routine,void *attr,void *arg){
-    char *stack = (char *)malloc(1024);
-    pid_t tid = clone(routine,stack + 1024,CLONE_FILES | CLONE_FS,arg,NULL);
+    char *stack = (char *)malloc(STACK_SZ);
+    pid_t tid = clone(routine,stack + 1024, CLONE_FLAGS,arg,NULL);
     if(tid == -1){
-        perror("");
+        perror("Error:");
+        free(stack);
         return errno;
     }
-    return 0;
+    wait(NULL);
+    free(stack);
+    return tid;
 }
