@@ -13,8 +13,8 @@ init:
 			fi \
 		done
 
-test: caller.c thread.c 
-	$(CC) -c caller.c thread.c 
+test: src/caller.c src/thread.c 
+	$(CC) -c src/caller.c src/thread.c 
 	$(CC) caller.o thread.o -o tout
 
 clean:
