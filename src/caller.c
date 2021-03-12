@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include<sys/wait.h>
 #include<stdlib.h>
+#include"attributetypes.h"
 
 int arr[] = {0,0,0,0,0,0};
 /**
@@ -38,6 +39,8 @@ int func(void *a){
  * @return int 
  */
 int main(){
+    // thread_attr attribute;
+    // thread_attr_init(&attribute);
 
     thread t,t1;
     printf("Process ID : %d\n",getpid());
@@ -47,9 +50,9 @@ int main(){
     printf("Thread 1 ID : %d\n",tid);
     printf("Thread 2 ID : %d\n",tid2);
 
-
-    // thread_join(tid,NULL); 
-    // thread_join(tid2,NULL);
+    thread_join(tid,NULL); 
+    thread_join(tid2,NULL);
+    // thread_attr_destroy(&attribute);
     for(int i = 0 ; i < 6 ;i++) printf("%d ",arr[i]);
     printf("Returned from main");   
     return 0;

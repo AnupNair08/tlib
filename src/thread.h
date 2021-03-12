@@ -9,3 +9,9 @@ int thread_join(thread t, void **retLocation);
 thread createOneOne(thread *t, void *attr,void * routine, void *arg);
 thread createManyOne(thread *t, void *attr,void * routine, void *arg);
 thread createManyMany(thread *t, void *attr,void * routine, void *arg);
+
+typedef struct tcb {
+    thread tid;
+    // struct attr;
+    char *stack;
+} tcb;

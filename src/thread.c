@@ -8,7 +8,29 @@
 #include<sys/types.h>
 #include<stdlib.h>
 #include "thread.h"
-#include"tlibtypes.h"
+#include "tlibtypes.h"
+#include "attributetypes.h"
+
+
+
+static void init(){
+    puts("Library initialised");
+    //Initialise necessay data structures
+}
+
+
+// int thread_attr_init(thread_attr *t){
+//     thread_attr th_init = default_values;
+//     t = &th_init;
+//     return 0;
+// }
+
+
+// int thread_attr_destroy(thread_attr *t){
+//     t = NULL;
+//     return 0;
+// }
+
 
 /**
  * @brief Umbrella function which calls specific thread function
@@ -31,11 +53,14 @@ thread create(thread *t,void *attr,void * routine,void *arg, int threadMode){
     }
 }
 
-static void init(){
-    puts("Library initialised");
-    //Initialise necessay data structures
-}
 
+typedef struct threadStack {
+    thread tid;
+    char *stack;
+    long size;
+} threadStack;
+
+threadStack ts[2];
 /**
  * @brief Create a One One mapped thread  
  * 
@@ -48,8 +73,20 @@ static void init(){
 //
 thread createOneOne(thread *t,void *attr,void * routine, void *arg){
     static int initState = 0;
-    char *stack = (char *)malloc(STACK_SZ);
-    thread tid = clone(routine,stack + STACK_SZ, CLONE_FLAGS,arg,NULL);
+    thread tid;
+    char *stack;
+    
+    if(attr){
+        thread_attr *t = (thread_attr *)attr;
+        stack = (char *)malloc(t->stackSize);
+        tid = clone(routine,stack + t->stackSize, CLONE_FLAGS,arg,NULL);
+    }
+    else{
+        stack = (char *)malloc(STACK_SZ);
+        tid = clone(routine,stack + STACK_SZ, CLONE_FLAGS,arg,NULL);
+    }
+
+    
     if(tid == -1){
         perror("tlib create");
         free(stack);
@@ -61,6 +98,8 @@ thread createOneOne(thread *t,void *attr,void * routine, void *arg){
         initState = 1;
         init();
     }
+    ts[ts->size++].tid = tid;
+    ts[ts->size++].stack = stack;
     return tid;
 }
 
@@ -70,6 +109,12 @@ int thread_join(thread t, void **retLocation){
     if(tid == -1){
         perror("tlib join");
         return errno;
+    }
+    for(int i = 0 ; i < 2;i++){
+        if(ts[i].tid == t){
+            free(ts[i].stack);
+            break;
+        }
     }
     return 0;
 }
