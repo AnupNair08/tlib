@@ -40,9 +40,9 @@ int func(void *a){
 int main(){
     thread_attr attribute;
     thread_attr_init(&attribute);
-    printf("Stack size %d \n",thread_attr_getStack(&attribute));
+    printf("Stack size %ld \n",thread_attr_getStack(&attribute));
     thread_attr_setStack(&attribute,4096);
-    printf("Stack size %d \n",thread_attr_getStack(&attribute));
+    printf("Stack size %ld \n",thread_attr_getStack(&attribute));
 
     
     thread t,t1;

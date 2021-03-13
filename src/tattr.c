@@ -2,18 +2,18 @@
 #include "tlibtypes.h"
 #include "attributetypes.h"
 
-static thread_attr _default = {0,0,0,NULL,0,0,NULL,65536};
+static thread_attr __default = {0,0,0,NULL,0,0,NULL,65536};
 
 
 int thread_attr_init(thread_attr *t){
-    t->stackSize = _default.stackSize;
-    t->detachState = _default.detachState;
-    t->guardSize = _default.guardSize;
-    t->inheritSched = _default.inheritSched;
-    t->schedParams = _default.schedParams;
-    t->scope = _default.scope;
-    t->stack = _default.stack;
-    t->schedPolicy = _default.schedPolicy;
+    t->stackSize = __default.stackSize;
+    t->detachState = __default.detachState;
+    t->guardSize = __default.guardSize;
+    t->inheritSched = __default.inheritSched;
+    t->schedParams = __default.schedParams;
+    t->scope = __default.scope;
+    t->stack = __default.stack;
+    t->schedPolicy = __default.schedPolicy;
     return 0;
 }
 
