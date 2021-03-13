@@ -1,5 +1,4 @@
 #include<stdlib.h>
-#define STACK_SZ 65536
 
 typedef struct sched_params {
     // Will be needed for storing scheduling info in many one model;
@@ -21,3 +20,4 @@ int thread_attr_init(thread_attr *);
 int thread_attr_destroy(thread_attr *);
 
 size_t thread_attr_getStack(thread_attr *);
+int thread_attr_setStack(thread_attr *,size_t);

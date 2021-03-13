@@ -5,7 +5,6 @@
 #include<sys/wait.h>
 #include<stdlib.h>
 #include"attributetypes.h"
-
 int arr[] = {0,0,0,0,0,0};
 /**
  * @brief Routine run by the thread
@@ -39,20 +38,27 @@ int func(void *a){
  * @return int 
  */
 int main(){
-    // thread_attr attribute;
-    // thread_attr_init(&attribute);
+    thread_attr attribute;
+    thread_attr_init(&attribute);
+    printf("Stack size %d \n",thread_attr_getStack(&attribute));
+    thread_attr_setStack(&attribute,4096);
+    printf("Stack size %d \n",thread_attr_getStack(&attribute));
 
+    
     thread t,t1;
     printf("Process ID : %d\n",getpid());
-    pid_t tid = create(&t,NULL,func,"1",0);
+    pid_t tid = create(&t,&attribute,func,"1",0);
     pid_t tid2 = create(&t1,NULL,func,"2",0);
     // getchar();
     printf("Thread 1 ID : %d\n",tid);
     printf("Thread 2 ID : %d\n",tid2);
 
-    thread_join(tid,NULL); 
-    thread_join(tid2,NULL);
-    // thread_attr_destroy(&attribute);
+    #ifdef DEV
+        thread_join(tid,NULL); 
+        thread_join(tid2,NULL);
+    #endif
+
+    thread_attr_destroy(&attribute);
     for(int i = 0 ; i < 6 ;i++) printf("%d ",arr[i]);
     printf("Returned from main");   
     return 0;

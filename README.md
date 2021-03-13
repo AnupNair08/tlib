@@ -7,6 +7,10 @@
 
 One one model will use the clone system call to create a corresponding kernel thread for each user level thread. It is referred to as LWP.
 LWPs share a same set of resources that is allocated to the process. These include address space, physical memory pages, file systems, open files and signal handlers. Extensive resource sharing is the reason these processes are called light-weight processes. 
+
+
+
+Important flags related to the clone system call.
 ```js
      CLONE_VM, CLONE_FS, CLONE_FILES
 	These flags select semantics with shared address space and
@@ -28,4 +32,8 @@ LWPs share a same set of resources that is allocated to the process. These inclu
      CLONE_DETACHED
 	No signal is generated if the thread exists and it is
 	automatically reaped.
+	CLONE_THREAD
+	Makes the thread exist in the same process group as that of the main thread. 
+	This makes sure that the only parent is the shell that forked the process and all other threads are part of this process group.
+	
 ```

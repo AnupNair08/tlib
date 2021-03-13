@@ -14,8 +14,8 @@ init:
 		done
 
 test: src/caller.c src/thread.c 
-	$(CC) -c src/caller.c src/thread.c 
-	$(CC) caller.o thread.o -o tout
+	$(CC) -c src/caller.c src/thread.c src/tattr.c
+	$(CC) caller.o thread.o tattr.o -o tout
 
 clean:
 	@rm *.o
