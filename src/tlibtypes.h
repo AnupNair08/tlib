@@ -1,5 +1,8 @@
 #include<stdlib.h>
+#include<unistd.h>
 #define STACK_SZ 65536
+#define GUARD_SZ getpagesize()
+
 #ifdef OLD_FLAGS
     #define CLONE_FLAGS CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_VM | SIGCHLD
 #endif

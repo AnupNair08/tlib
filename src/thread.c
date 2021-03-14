@@ -8,12 +8,13 @@
 #include<sys/wait.h>
 #include<sys/types.h>
 #include<stdlib.h>
+#include <sys/mman.h>
 #include "thread.h"
 #include "tlibtypes.h"
 #include "attributetypes.h"
 
 static void init(){
-    puts("Library initialised");
+    // puts("Library initialised");
     //Initialise necessay data structures
 }
 
@@ -29,7 +30,7 @@ static void init(){
  * @param threadMode Mapping model to be used (0 = One One , 1 = Many One, 2 = Many Many)
  * @return thread 
  */
-thread create(thread *t,void *attr,void * routine,void *arg, int threadMode){
+int create(thread *t,void *attr,void * routine,void *arg, int threadMode){
     switch(threadMode){
         case 0:
             return createOneOne(t, attr,routine, arg);
@@ -40,24 +41,17 @@ thread create(thread *t,void *attr,void * routine,void *arg, int threadMode){
     }
 }
 
-#ifndef DEV
-typedef struct threadStack {
-    thread tid;
-    char *stack;
-    long size;
-} threadStack;
-
-threadStack ts[2];
-#endif
 
 
-static void* allocStack(size_t size){
-    void *stack = malloc(size);  
-    if(posix_memalign(&stack,8,size) != 0){
+void* allocStack(size_t size, size_t guard){
+    
+    void *stack = NULL;  
+    //Align the memory to a 64 bit compatible page size and associate a guard area for the stack 
+    if(posix_memalign(&stack,GUARD_SZ,size + guard) || mprotect(stack,guard, PROT_NONE)){
         perror("Stack Allocation");
         return NULL;
     }
-    return stack + size;
+    return stack;
 }
 
 
@@ -71,20 +65,39 @@ static void* allocStack(size_t size){
  * @return thread 
  */
 //
-thread createOneOne(thread *t,void *attr,void * routine, void *arg){
+int createOneOne(thread *t,void *attr,void * routine, void *arg){
     static int initState = 0;
     tcb *thread_t = (tcb *)malloc(sizeof(tcb));
+    if(!thread_t){
+        perror("");
+        return errno;
+    }
     thread tid;
     void *thread_stack;
 
     if(attr){
-        thread_attr *t = (thread_attr *)attr;
-        thread_stack = allocStack(t->stackSize);
-        tid = clone(routine,thread_stack, CLONE_FLAGS,arg,NULL);
+        thread_stack = allocStack(((thread_attr *)attr)->stackSize, ((thread_attr *)attr)->guardSize);
+        if(!thread_stack) {
+            perror("tlib create");
+            return errno;
+        }
+        tid = clone(routine,
+                    thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
+                    CLONE_FLAGS,
+                    arg,
+                    NULL);
     }
     else{
-        thread_stack = allocStack(STACK_SZ);
-        tid = clone(routine,thread_stack, CLONE_FLAGS,arg,NULL);
+        thread_stack = allocStack(STACK_SZ,GUARD_SZ);
+        if(!thread_stack) {
+            perror("tlib create");
+            return errno;
+        }
+        tid = clone(routine,
+                    thread_stack + STACK_SZ + GUARD_SZ,
+                    CLONE_FLAGS,
+                    arg,
+                    NULL);
     }
 
     
@@ -94,19 +107,16 @@ thread createOneOne(thread *t,void *attr,void * routine, void *arg){
         return errno;
     }
     int status;
-    // free(stack);
+
     if(initState == 0){
         initState = 1;
         init();
     }
-    #ifndef DEV
-        ts[ts->size++].tid = tid;
-        ts[ts->size++].stack = stack;
-    #endif // !DEV
+    *t = tid;
     thread_t->tid = tid;
     thread_t->stack = thread_stack;
     thread_t->stack_sz = attr == NULL ? STACK_SZ : ((thread_attr *)attr)->stackSize;
-    return tid;
+    return 0;
 }
 
 int thread_join(thread t, void **retLocation){
@@ -129,13 +139,13 @@ int thread_join(thread t, void **retLocation){
 
 
 //Handles ManyOne thread creation
-thread createManyOne(thread *t, void *attr,void * routine, void *arg){
+int createManyOne(thread *t, void *attr,void * routine, void *arg){
     /*ManyOne Code*/
     return 0;
 }
 
 //Handles ManyMany thread creation
-thread createManyMany(thread *t, void *attr,void * routine, void *arg){
+int createManyMany(thread *t, void *attr,void * routine, void *arg){
     /*ManyMany Code*/
     return 0;
 }
