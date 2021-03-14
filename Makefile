@@ -13,9 +13,9 @@ init:
 			fi \
 		done
 
-test: src/caller.c src/thread.c 
-	$(CC) -c src/caller.c src/thread.c src/tattr.c
-	$(CC) caller.o thread.o tattr.o -o tout
+test: src/caller.c src/thread.c src/dataStructs.c
+	$(CC) -c src/caller.c src/thread.c src/tattr.c src/dataStructs.c
+	$(CC) caller.o thread.o tattr.o dataStructs.o -o tout
 
 clean:
 	@rm *.o
