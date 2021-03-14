@@ -86,7 +86,6 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
     }
     thread tid;
     void *thread_stack;
-    void *stack = malloc(sizeof(thread));
     int status;
     if(initState == 0){
         initState = 1;
@@ -103,7 +102,9 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
                     thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
                     CLONE_FLAGS,
                     arg,
-                    NULL,NULL, returnTailTidAddress(&tidList));
+                    NULL,
+                    NULL, 
+                    returnTailTidAddress(&tidList));
     }
     else{
         thread_stack = allocStack(STACK_SZ,GUARD_SZ);
@@ -115,18 +116,14 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
                     thread_stack + STACK_SZ + GUARD_SZ,
                     CLONE_FLAGS,
                     arg,
-                    NULL,NULL, returnTailTidAddress(&tidList));
+                    NULL,
+                    NULL, 
+                    returnTailTidAddress(&tidList));
     }
     if(tid == -1){
         perror("tlib create");
         free(thread_stack);
         return errno;
-    }
-    int status;
-
-    if(initState == 0){
-        initState = 1;
-        init();
     }
     *t = tid;
     thread_t->tid = tid;
@@ -147,14 +144,6 @@ int thread_join(thread t, void **retLocation){
         fflush(stdout);
     #endif
     singlyLLDelete(&tidList, t);
-    #ifndef DEV
-    for(int i = 0 ; i < 2;i++){
-        if(ts[i].tid == t){
-            free(ts[i].stack);
-            break;
-        }
-    }
-    #endif // !DEV
     return 0;
 }
 
