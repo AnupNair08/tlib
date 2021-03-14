@@ -1,5 +1,5 @@
 doxygen/
-tests/
+localtests/
 *.o
 tout
 resources/
