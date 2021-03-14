@@ -9,16 +9,28 @@
 #include<sys/types.h>
 #include<stdlib.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <linux/futex.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <stdlib.h>
 #include "thread.h"
 #include "tlibtypes.h"
 #include "attributetypes.h"
+#include "dataStructTypes.h"
+
+singlyLL tidList;
 
 static void init(){
     // puts("Library initialised");
     //Initialise necessay data structures
+    singlyLLInit(&tidList);
 }
-
-
 
 /**
  * @brief Umbrella function which calls specific thread function
@@ -74,7 +86,13 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
     }
     thread tid;
     void *thread_stack;
-
+    void *stack = malloc(sizeof(thread));
+    int status;
+    if(initState == 0){
+        initState = 1;
+        init();
+    }
+    singlyLLInsert(&tidList, 0);
     if(attr){
         thread_stack = allocStack(((thread_attr *)attr)->stackSize, ((thread_attr *)attr)->guardSize);
         if(!thread_stack) {
@@ -85,7 +103,7 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
                     thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
                     CLONE_FLAGS,
                     arg,
-                    NULL);
+                    NULL,NULL, returnTailTidAddress(&tidList));
     }
     else{
         thread_stack = allocStack(STACK_SZ,GUARD_SZ);
@@ -97,10 +115,8 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
                     thread_stack + STACK_SZ + GUARD_SZ,
                     CLONE_FLAGS,
                     arg,
-                    NULL);
+                    NULL,NULL, returnTailTidAddress(&tidList));
     }
-
-    
     if(tid == -1){
         perror("tlib create");
         free(thread_stack);
@@ -121,11 +137,16 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
 
 int thread_join(thread t, void **retLocation){
     int status;
-    pid_t tid = waitpid(t,&status,WUNTRACED);
-    if(tid == -1){
-        perror("tlib join");
-        return errno;
-    }
+    #ifdef DEV
+        printf("Futex waiting for thread %ld\n", t);
+        fflush(stdout);
+    #endif
+    syscall(SYS_futex , returnCustomTidAddress(&tidList, t), FUTEX_WAIT, t, NULL, NULL, 0);
+    #ifdef DEV
+        printf("Futex done with thread %ld\n", t);
+        fflush(stdout);
+    #endif
+    singlyLLDelete(&tidList, t);
     #ifndef DEV
     for(int i = 0 ; i < 2;i++){
         if(ts[i].tid == t){
