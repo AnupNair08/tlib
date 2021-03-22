@@ -126,13 +126,13 @@ void testExit(){
  * 
  */
 int main(int arc,char *argv[]){
-    testCreate();
+    // testCreate();
     LINE;
-    // if(setjmp(buffer) == 0)
-    //     testStack();
-    // else{
-    //     printf(GREEN"Test Passed\n"RESET);
-    // }
+    if(setjmp(buffer) == 0)
+        testStack();
+    else{
+        printf(GREEN"Test Passed\n"RESET);
+    }
     // testExit();
     return 0;
 }

@@ -130,9 +130,6 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
         return errno;
     }
     *t = tid;
-    thread_t->tid = tid;
-    thread_t->stack = thread_stack;
-    thread_t->stack_sz = attr == NULL ? STACK_SZ : ((thread_attr *)attr)->stackSize;
     return 0;
 }
 

@@ -5,14 +5,14 @@ typedef struct sched_params {
 } sched_params;
 
 typedef struct thread_attr {
-    int detachState;
-    size_t guardSize;
-    int inheritSched;
-    sched_params *schedParams;
-    int schedPolicy;
-    int scope;
     void *stack;
+    size_t guardSize;
     size_t stackSize;
+    // int detachState;
+    // int inheritSched;
+    // sched_params *schedParams;
+    // int schedPolicy;
+    // int scope;
 } thread_attr;
 
 
