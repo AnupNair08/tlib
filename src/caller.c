@@ -42,9 +42,12 @@ int main(){
     printf("Thread 2 ID : %ld\n", t2);
     printf("Thread 3 ID : %ld\n", t3);
     
-    thread_join(t1, NULL);    
     thread_join(t2, NULL);
+    printf("t2 done");
     thread_join(t3, NULL);
+    printf("t3 done");
+    thread_join(t1, NULL);    
+    printf("t1 done");
     
     thread_attr_destroy(&attribute);
     return 0;

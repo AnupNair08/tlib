@@ -105,6 +105,7 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
                     addr,
                     NULL, 
                     addr);
+        persistTid(&tidList);
     }
     else{
         thread_stack = allocStack(STACK_SZ,GUARD_SZ);
@@ -120,6 +121,7 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
                     addr,
                     NULL, 
                     addr);
+        persistTid(&tidList);
     }
     if(tid == -1){
         perror("tlib create");
@@ -141,8 +143,8 @@ int thread_join(thread t, void **retLocation){
         fflush(stdout);
     void *addr = returnCustomTidAddress(&tidList, t);
     int ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
-    printf("%d\n",ret);
-    perror("");
+    // printf("%d\n",ret);
+    // perror("");
     #ifndef DEV
         printf("Futex done with thread %ld\n", t);
         fflush(stdout);

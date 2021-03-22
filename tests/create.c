@@ -15,7 +15,8 @@ jmp_buf buffer;
 void routine(void *i){
     int a = 10;
     long b = a * 100;
-    sleep(2 * *(int *)i);
+    // sleep(2 * *(int *)i);
+    sleep(2);
     // printf("Yes %d\n",*(int *)(i));
     return;
 }
@@ -31,7 +32,6 @@ void testCreate(){
     for(int i = 0 ;i < 10; i++){
         if(create(&t[i],NULL,routine,(void *)&i,0) == 0){
             printf("Thread %d created successfully with id %ld\n",i,t[i]);
-            thread_join(t[i],NULL);
             s++;
         }
         else{
@@ -39,7 +39,8 @@ void testCreate(){
             f++;
         }
     }
-    for(int i = 0 ; i < 10 ;i++)
+    for(int i = 9 ; i > 0 ;i--)
+        thread_join(t[i],NULL);
     printf(RESET"Test completed with the following statistics:\n");
     printf(GREEN"Success: %d\n",s);
     printf(RED"Failures: %d\n"RESET,f);

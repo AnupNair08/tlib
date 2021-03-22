@@ -19,6 +19,7 @@ int singlyLLInsert(singlyLL *ll, unsigned long int tid){
         perror("ll alloc");
         return -1;
     }
+    int temp = tid;
     tmp->tid = tid;
     tmp->next = NULL;
     if(ll->head==NULL){
@@ -33,17 +34,19 @@ int singlyLLInsert(singlyLL *ll, unsigned long int tid){
 
 int singlyLLDelete(singlyLL *ll, unsigned long int tid){
     node *tmp1 = ll->head;
-    printf("LL status before del\n");
+    #ifdef DEV
+    printf("LL status before del and tid is %d\n",tid)  ;
     while(tmp1){
-        printf("%d ",tmp1->tid);
+        printf("%ld ",tmp1->tidCpy);
         tmp1 = tmp1->next;
     }
     puts("");
+    #endif // !DEV
     node* tmp = ll->head;
     if(tmp == NULL){
         return 0;
     }
-    if(tmp->tid == tid){
+    if(tmp->tidCpy == tid){
         ll->head = ll->head->next;
         free(tmp);
         if(ll->head == NULL){
@@ -52,13 +55,14 @@ int singlyLLDelete(singlyLL *ll, unsigned long int tid){
         return 0;
     }
     while(tmp->next){
-        if(tmp->next->tid == tid){
+        if(tmp->next->tidCpy == tid){
             node* tmpNext = tmp->next->next;
             if(tmp->next == ll->tail){
                 ll->tail = tmp;
             }
             free(tmp->next);
             tmp->next = tmpNext;
+            break;
         }
         tmp = tmp->next;
     }
@@ -75,10 +79,16 @@ unsigned long int* returnTailTidAddress(singlyLL* ll){
 unsigned long int* returnCustomTidAddress(singlyLL* ll, unsigned long int tid){
     node* tmp = ll->head;
     while(tmp!=NULL){
-        if(tmp->tid == tid){
+        if(tmp->tidCpy == tid){
             return &(tmp->tid);
         }
         tmp = tmp->next;
     }
     return NULL;
+}
+
+void persistTid(singlyLL* ll){
+    ll->tail->tidCpy = ll->tail->tid;
+    // printf("%ld\n", ll->tail->tidCpy);
+    return;
 }
