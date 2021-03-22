@@ -23,11 +23,10 @@
 #include "tlibtypes.h"
 #include "attributetypes.h"
 #include "dataStructTypes.h"
-
 singlyLL tidList;
 
 static void init(){
-    // puts("Library initialised");
+    printf("Library initialised\n");
     //Initialise necessay data structures
     singlyLLInit(&tidList);
 }
@@ -98,13 +97,14 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
+        void * addr = returnTailTidAddress(&tidList);
         tid = clone(routine,
                     thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
                     CLONE_FLAGS,
                     arg,
-                    NULL,
+                    addr,
                     NULL, 
-                    returnTailTidAddress(&tidList));
+                    addr);
     }
     else{
         thread_stack = allocStack(STACK_SZ,GUARD_SZ);
@@ -112,13 +112,14 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
+        void * addr = returnTailTidAddress(&tidList);
         tid = clone(routine,
                     thread_stack + STACK_SZ + GUARD_SZ,
                     CLONE_FLAGS,
                     arg,
-                    NULL,
+                    addr,
                     NULL, 
-                    returnTailTidAddress(&tidList));
+                    addr);
     }
     if(tid == -1){
         perror("tlib create");
@@ -134,12 +135,15 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
 
 int thread_join(thread t, void **retLocation){
     int status;
-    #ifdef DEV
+    #ifndef DEV
+    #endif
         printf("Futex waiting for thread %ld\n", t);
         fflush(stdout);
-    #endif
-    syscall(SYS_futex , returnCustomTidAddress(&tidList, t), FUTEX_WAIT, t, NULL, NULL, 0);
-    #ifdef DEV
+    void *addr = returnCustomTidAddress(&tidList, t);
+    int ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
+    printf("%d\n",ret);
+    perror("");
+    #ifndef DEV
         printf("Futex done with thread %ld\n", t);
         fflush(stdout);
     #endif

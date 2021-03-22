@@ -12,9 +12,11 @@
 
 jmp_buf buffer;
 
-void routine(){
+void routine(void *i){
     int a = 10;
     long b = a * 100;
+    sleep(2 * *(int *)i);
+    // printf("Yes %d\n",*(int *)(i));
     return;
 }
 
@@ -27,8 +29,9 @@ void testCreate(){
     printf("tlib creation test started...\n");
     thread t[10];
     for(int i = 0 ;i < 10; i++){
-        if(create(&t[i],NULL,routine,NULL,0) == 0){
+        if(create(&t[i],NULL,routine,(void *)&i,0) == 0){
             printf("Thread %d created successfully with id %ld\n",i,t[i]);
+            thread_join(t[i],NULL);
             s++;
         }
         else{
@@ -36,7 +39,7 @@ void testCreate(){
             f++;
         }
     }
-    
+    for(int i = 0 ; i < 10 ;i++)
     printf(RESET"Test completed with the following statistics:\n");
     printf(GREEN"Success: %d\n",s);
     printf(RED"Failures: %d\n"RESET,f);
@@ -71,10 +74,10 @@ void testStack(){
 int main(int arc,char *argv[]){
     testCreate();
     LINE;
-    if(setjmp(buffer) == 0)
-        testStack();
-    else{
-        printf(GREEN"Test Passed\n"RESET);
-    }
+    // if(setjmp(buffer) == 0)
+    //     testStack();
+    // else{
+    //     printf(GREEN"Test Passed\n"RESET);
+    // }
     return 0;
 }

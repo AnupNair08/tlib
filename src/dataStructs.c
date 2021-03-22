@@ -9,6 +9,12 @@ int singlyLLInit(singlyLL *ll){
 
 int singlyLLInsert(singlyLL *ll, unsigned long int tid){
     node* tmp;
+    // node *tmp1 = ll->head;
+    // printf("LL status before ins\n");
+    // while(tmp1){
+    //     printf("%d\n",tmp1->tid);
+    //     tmp1 = tmp1->next;
+    // }
     if(posix_memalign((void*)&tmp, 8, sizeof(node))){
         perror("ll alloc");
         return -1;
@@ -26,6 +32,13 @@ int singlyLLInsert(singlyLL *ll, unsigned long int tid){
 }
 
 int singlyLLDelete(singlyLL *ll, unsigned long int tid){
+    node *tmp1 = ll->head;
+    printf("LL status before del\n");
+    while(tmp1){
+        printf("%d ",tmp1->tid);
+        tmp1 = tmp1->next;
+    }
+    puts("");
     node* tmp = ll->head;
     if(tmp == NULL){
         return 0;
