@@ -23,6 +23,7 @@
 #include "tlibtypes.h"
 #include "attributetypes.h"
 #include "dataStructTypes.h"
+#include<limits.h>
 singlyLL tidList;
 
 static void init(){
@@ -138,9 +139,9 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
 int thread_join(thread t, void **retLocation){
     int status;
     #ifndef DEV
-    #endif
         printf("Futex waiting for thread %ld\n", t);
         fflush(stdout);
+    #endif
     void *addr = returnCustomTidAddress(&tidList, t);
     int ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
     // printf("%d\n",ret);
@@ -153,6 +154,15 @@ int thread_join(thread t, void **retLocation){
     return 0;
 }
 
+
+void thread_exit(void *ret){
+    void *addr = returnCustomTidAddress(&tidList, gettid());
+    syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
+    singlyLLDelete(&tidList, gettid());
+    // _exit(0);
+    kill(SIGINT,gettid());
+    return;
+}
 
 //Handles ManyOne thread creation
 int createManyOne(thread *t, void *attr,void * routine, void *arg){

@@ -4,7 +4,7 @@ typedef unsigned long int thread;
 
 int create(thread *t,void *attr, void *routine,void *arg, int threadMode);
 int thread_join(thread t, void **retLocation);
-
+void thread_exit(void *);
 
 int createOneOne(thread *t, void *attr,void * routine, void *arg);
 int createManyOne(thread *t, void *attr,void * routine, void *arg);

@@ -12,12 +12,18 @@
 
 jmp_buf buffer;
 
+void syncprintf(){
+    
+}
+
 void routine(void *i){
     int a = 10;
     long b = a * 100;
     // sleep(2 * *(int *)i);
-    sleep(2);
-    // printf("Yes %d\n",*(int *)(i));
+    // sleep(2);
+    flockfile(stdout);
+    printf("Yes %d\n",*(int *)(i));
+    funlockfile(stdout);
     return;
 }
 
@@ -31,7 +37,10 @@ void testCreate(){
     thread t[10];
     for(int i = 0 ;i < 10; i++){
         if(create(&t[i],NULL,routine,(void *)&i,0) == 0){
+            flockfile(stdout);
             printf("Thread %d created successfully with id %ld\n",i,t[i]);
+            funlockfile(stdout);
+            thread_join(t[i],NULL);
             s++;
         }
         else{
@@ -40,7 +49,33 @@ void testCreate(){
         }
     }
     for(int i = 9 ; i > 0 ;i--)
+    flockfile(stdout);
+    printf(RESET"Test completed with the following statistics:\n");
+    printf(GREEN"Success: %d\n",s);
+    printf(RED"Failures: %d\n"RESET,f);
+    funlockfile(stdout);
+    return;
+}
+
+void testJoin(){
+    //Sleep in different intervals (Pipelined test)
+    //Order of join 
+    int s = 0,f = 0;
+    printf("tlib creation test started...\n");
+    thread t[10];
+    for(int i = 0 ;i < 10; i++){
+        if(create(&t[i],NULL,routine,(void *)&i,0) == 0){
+            printf("Thread %d created successfully with id %ld\n",i,t[i]);
+            s++;
+        }
+        else{
+            printf(RED"Thread creation failed\n");
+            f++;
+        }
+    }
+    for(int i = 9 ; i > 0 ;i--){
         thread_join(t[i],NULL);
+    }
     printf(RESET"Test completed with the following statistics:\n");
     printf(GREEN"Success: %d\n",s);
     printf(RED"Failures: %d\n"RESET,f);
@@ -68,6 +103,24 @@ void testStack(){
     return;
 }
 
+void routine1(){
+    sleep(10);
+}
+
+void routine2(){
+    thread_exit(NULL);
+    sleep(10);
+}
+
+void testExit(){
+    thread t,t2;
+    create(&t,NULL,routine1,NULL,0);
+    create(&t2,NULL,routine2,NULL,0);
+    thread_join(t,NULL);
+    thread_join(t2,NULL);
+    printf("Joining Complete\n");
+}
+
 /**
  * @brief Caller function
  * 
@@ -80,5 +133,6 @@ int main(int arc,char *argv[]){
     // else{
     //     printf(GREEN"Test Passed\n"RESET);
     // }
+    // testExit();
     return 0;
 }
