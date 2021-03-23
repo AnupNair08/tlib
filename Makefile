@@ -18,9 +18,9 @@ test: src/caller.c src/thread.c src/dataStructs.c
 	$(CC) caller.o thread.o tattr.o dataStructs.o -o tout
 
 
-runtest: tests/create.c src/thread.c src/tattr.c src/dataStructs.c
-	@$(CC) -Isrc/ -c tests/create.c src/thread.c src/tattr.c src/dataStructs.c
-	@$(CC) -g create.o thread.o tattr.o dataStructs.o -o create
+runtest: tests/create.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c
+	@$(CC) -Isrc/ -c tests/create.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c
+	@$(CC) -g create.o thread.o tattr.o dataStructs.o locks.o -o create
 	@./create
 	@rm create
 

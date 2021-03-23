@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <sys/syscall.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include "thread.h"
 #include "tlibtypes.h"
 #include "attributetypes.h"
