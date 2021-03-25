@@ -12,10 +12,6 @@
 
 jmp_buf buffer;
 
-void syncprintf(){
-    
-}
-
 void routine(void *i){
     int a = 10;
     long b = a * 100;
@@ -33,15 +29,15 @@ void routine(void *i){
  */
 void testCreate(){
     mut_t lock;
-    mutex_init(&lock);
+    spin_init(&lock);
     int s = 0,f = 0;
     printf("tlib creation test started...\n");
     thread t[10];
     for(int i = 0 ;i < 10; i++){
         if(create(&t[i],NULL,routine,(void *)&i,0) == 0){
-            mutex_acquire(&lock);
+            spin_acquire(&lock);
             printf("Thread %d created successfully with id %ld\n",i,t[i]);
-            mutex_release(&lock);
+            spin_release(&lock);
             s++;
         }
         else{
@@ -52,11 +48,11 @@ void testCreate(){
     for(int i = 9 ; i > 0 ;i--)
             thread_join(t[i],NULL);
 
-    mutex_acquire(&lock);
+    spin_acquire(&lock);
     printf(RESET"Test completed with the following statistics:\n");
     printf(GREEN"Success: %d\n",s);
     printf(RED"Failures: %d\n"RESET,f);
-    mutex_release(&lock);
+    spin_release(&lock);
     return;
 }
 
@@ -85,38 +81,38 @@ void testJoin(){
     return;
 }
 
-int mutexTest = 0;
+int spinTest = 0;
 
 void routine1(void *l){
-    mutex_acquire((mut_t *)l);
+    spin_acquire((mut_t *)l);
     // sleep(10);
-    printf("Routine 1 Before: %d\n",mutexTest);
-    mutexTest++;
-    printf("Routine 1 After: %d\n",mutexTest);
+    printf("Routine 1 Before: %d\n",spinTest);
+    spinTest++;
+    printf("Routine 1 After: %d\n",spinTest);
     // puts("Routine 1 exited\n");
-    mutex_release((mut_t *)l);
+    spin_release((mut_t *)l);
 }
 
 void routine2(void *l){
-    mutex_acquire((mut_t *)l);
+    spin_acquire((mut_t *)l);
     // sleep(10);
-    printf("Routine 2 Before: %d\n",mutexTest);
-    mutexTest++;
-    printf("Routine 2 After: %d\n",mutexTest);
+    printf("Routine 2 Before: %d\n",spinTest);
+    spinTest++;
+    printf("Routine 2 After: %d\n",spinTest);
     // puts("Routine 1 exited\n");
-    mutex_release((mut_t *)l);
+    spin_release((mut_t *)l);
 }
 
 void testLocks(){
     thread t1,t2;
     mut_t lock;
-    mutex_init(&lock);
+    spin_init(&lock);
     create(&t1,NULL,routine1, (void *)&lock,0);
     create(&t2,NULL,routine2, (void *)&lock,0);
     thread_join(t1,NULL);
     thread_join(t2,NULL);
 
-    printf("Joining Complete %d\n",mutexTest);
+    printf("Joining Complete %d\n",spinTest);
 }
 
 /**
