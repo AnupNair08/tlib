@@ -38,3 +38,8 @@ int thread_attr_setGuard(thread_attr *t, size_t size) {
 size_t thread_attr_getGuard(thread_attr *t){
     return t->guardSize;
 }
+
+int thread_attr_setStackAddr(thread_attr *t,void *stack){
+    t->stack = stack;
+    return 0;
+}

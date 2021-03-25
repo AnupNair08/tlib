@@ -94,7 +94,8 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
     }
     singlyLLInsert(&tidList, 0);
     if(attr){
-        thread_stack = allocStack(((thread_attr *)attr)->stackSize, ((thread_attr *)attr)->guardSize);
+        thread_attr *attr_t = (thread_attr *)attr;
+        thread_stack = attr_t->stack == NULL ? allocStack(attr_t->stackSize, attr_t->guardSize) : attr_t->stack ;
         if(!thread_stack) {
             perror("tlib create");
             return errno;

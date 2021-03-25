@@ -85,39 +85,7 @@ void testJoin(){
     return;
 }
 
-int mutexTest = 0;
 
-void routine1(void *l){
-    mutex_acquire((mut_t *)l);
-    // sleep(10);
-    printf("Routine 1 Before: %d\n",mutexTest);
-    mutexTest++;
-    printf("Routine 1 After: %d\n",mutexTest);
-    // puts("Routine 1 exited\n");
-    mutex_release((mut_t *)l);
-}
-
-void routine2(void *l){
-    mutex_acquire((mut_t *)l);
-    // sleep(10);
-    printf("Routine 2 Before: %d\n",mutexTest);
-    mutexTest++;
-    printf("Routine 2 After: %d\n",mutexTest);
-    // puts("Routine 1 exited\n");
-    mutex_release((mut_t *)l);
-}
-
-void testLocks(){
-    thread t1,t2;
-    mut_t lock;
-    mutex_init(&lock);
-    create(&t1,NULL,routine1, (void *)&lock,0);
-    create(&t2,NULL,routine2, (void *)&lock,0);
-    thread_join(t1,NULL);
-    thread_join(t2,NULL);
-
-    printf("Joining Complete %d\n",mutexTest);
-}
 
 /**
  * @brief Allocate a stack of 8 bytes which will be overflown and then check if guard page generates
@@ -135,16 +103,26 @@ void testStack(){
     if(thread_attr_init(&attr)){
         printf(RED"Attribute initialisation failed\n");
     }
+    // void *stack = malloc(8);
+    // thread_attr_setStackAddr(&attr,stack);
     thread_attr_setStack(&attr,8);
     create(&t,&attr,routine,NULL,0);
     return;
 }
 
+void exitroutine1(){
+    printf("Exiting thread 1\n");
+} 
+
+
+void exitroutine2(){
+    printf("Exiting thread 2\n");
+} 
 
 void testExit(){
     thread t,t2;
-    create(&t,NULL,routine1,NULL,0);
-    create(&t2,NULL,routine2,NULL,0);
+    create(&t,NULL,exitroutine1,NULL,0);
+    create(&t2,NULL,exitroutine2,NULL,0);
     thread_join(t,NULL);
     thread_join(t2,NULL);
     printf("Joining Complete\n");
@@ -156,14 +134,15 @@ void testExit(){
  */
 int main(int arc,char *argv[]){
     setbuf(stdout, NULL);
-    // testCreate();
-    testLocks();
+    testCreate();
     LINE;
     if(setjmp(buffer) == 0)
         testStack();
     else{
         printf(GREEN"Test Passed\n"RESET);
     }
-    // testExit();
+    LINE;
+    testExit();
+    LINE;
     return 0;
 }

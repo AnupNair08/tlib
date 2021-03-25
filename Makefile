@@ -18,11 +18,15 @@ test: src/caller.c src/thread.c src/dataStructs.c
 	$(CC) caller.o thread.o tattr.o dataStructs.o -o tout
 
 
-runtest: tests/create.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c
-	@$(CC) -Isrc/ -c tests/create.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c
-	@$(CC) -g create.o thread.o tattr.o dataStructs.o locks.o -o create
-	@./create
-	@rm create
+runtest: tests/unitTests.c tests/lockTests.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c
+	@$(CC) -Isrc/ -c tests/unitTests.c tests/lockTests.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c
+	@$(CC) -g unitTests.o thread.o tattr.o dataStructs.o locks.o -o unitTests
+	@$(CC) -g lockTests.o thread.o tattr.o dataStructs.o locks.o -o lockTests
+	
+	@./unitTests 
+	@rm unitTests
+	@./lockTests
+	@rm lockTests
 
 clean:
 	@rm *.o
