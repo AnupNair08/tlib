@@ -25,6 +25,9 @@
 #include "attributetypes.h"
 #include "dataStructTypes.h"
 #include<limits.h>
+
+#define TGKILL 234
+
 singlyLL tidList;
 
 static void init(){
@@ -135,6 +138,17 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
     return 0;
 }
 
+int thread_kill(pid_t tid, int signum){
+    pid_t pid = getpid();
+    printf("%ld, %ld", pid, tid);
+    int ret = syscall(TGKILL, pid, tid, signum);
+    if(ret == -1){
+        perror("tgkill");
+        return errno;
+    }
+    return ret;
+}
+
 int thread_join(thread t, void **retLocation){
     int status;
     #ifndef DEV
@@ -142,13 +156,17 @@ int thread_join(thread t, void **retLocation){
         fflush(stdout);
     #endif
     void *addr = returnCustomTidAddress(&tidList, t);
+    if(addr == NULL){
+        return ESRCH;
+    }
+    if(*((pid_t*)addr) == 0){
+        return EINVAL;
+    }
     while(*((pid_t*)addr) == t){
         int ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
     }
     //By default, clone wakes up only one futex, so need a way to wake up multiple threads
     syscall(SYS_futex , addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-    // printf("%d\n",ret);
-    // perror("");
     #ifndef DEV
         printf("Futex done with thread %ld\n", t);
         fflush(stdout);

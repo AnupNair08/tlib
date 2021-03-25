@@ -52,10 +52,12 @@ void testLocks(int type){
 }
 
 int isConsistent(){
-    return refstring[0] == 0 && refstring[1] == 1 && refstring[2] == 1 && refstring[3] == 2;
+    // for(int i = 0;i < 4; i++) printf("%d\n",refstring[i]);
+    return (refstring[0] == 0 && refstring[1] == 1 && refstring[2] == 1 && refstring[3] == 2) || (refstring[0] == 1 && refstring[1] == 2 && refstring[2] == 0 && refstring[3] == 1);
 }
 
 int main(){
+    setbuf(stdout, NULL);
     printf("tlib Synchronization Tests\n\n");
     int i = 0;
     printf(GREEN"Testing Synchronization without locks.\n"RESET);
@@ -70,6 +72,7 @@ int main(){
         i++;
     }
     printf(GREEN"\nTesting with Locks\n"RESET);
+    i = 0;
     while(1){
         testLocks(WITH_LOCKS);
         if(!isConsistent()) {

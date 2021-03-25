@@ -1,5 +1,5 @@
-#include<stdio.h>
-#include<unistd.h>
+#include <stdio.h>
+#include <unistd.h>
 #ifdef BUILD
     #include<tlib.h>
 #else
@@ -7,8 +7,13 @@
 #endif
 #include "tests.h"
 #include "attributetypes.h"
-#include<signal.h>
-#include<setjmp.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+
+#define gettid() syscall(SYS_gettid)
 
 jmp_buf buffer;
 
@@ -123,21 +128,39 @@ void testExit(){
     printf("Joining Complete\n");
 }
 
+void sigroutine(){
+    sleep(2);
+    printf("Stopped and resumed");
+    return;
+}
+
+void testSig(){
+    thread t1;
+    create(&t1,NULL,sigroutine,NULL,0);
+    printf("%ld", t1);
+    int ret = thread_kill(t1, SIGSTOP);
+    sleep(5);
+    ret = thread_kill(t1, SIGCONT);
+    thread_join(t1,NULL);
+    printf(GREEN"Test Passed\n"RESET);
+}
+
 /**
  * @brief Caller function
  * 
  */
-int main(int arc,char *argv[]){
+int main(int argc,char *argv[]){
     setbuf(stdout, NULL);
-    testCreate();
-    LINE;
-    if(setjmp(buffer) == 0)
-        testStack();
-    else{
-        printf(GREEN"Test Passed\n"RESET);
-    }
-    LINE;
-    testExit();
-    LINE;
+    // testCreate();
+    // LINE;
+    // if(setjmp(buffer) == 0)
+    //     testStack();
+    // else{
+    //     printf(GREEN"Test Passed\n"RESET);
+    // }
+    // LINE;
+    // testExit();
+    // LINE;
+    testSig();
     return 0;
 }

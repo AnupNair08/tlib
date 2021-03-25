@@ -1,4 +1,5 @@
 #include<stdatomic.h>
+#include<unistd.h>
 typedef unsigned long int thread;
 typedef volatile atomic_flag mut_t;
 
@@ -6,6 +7,7 @@ typedef volatile atomic_flag mut_t;
 
 int create(thread *t,void *attr, void *routine,void *arg, int threadMode);
 int thread_join(thread t, void **retLocation);
+int thread_kill(pid_t t, int signum);
 void thread_exit(void *);
 
 int createOneOne(thread *t, void *attr,void * routine, void *arg);
