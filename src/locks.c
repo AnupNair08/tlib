@@ -1,15 +1,15 @@
 #include<stdatomic.h>
 #include"thread.h"
 #include<stdio.h>
-int mutex_init(mut_t* lock){
+int spin_init(mut_t* lock){
     *lock = (volatile mut_t)ATOMIC_FLAG_INIT;
 }
 
-int mutex_acquire(mut_t *lock){
+int spin_acquire(mut_t *lock){
     while(atomic_flag_test_and_set(lock));
 }
 
-int mutex_release(mut_t *lock){
+int spin_release(mut_t *lock){
     atomic_flag_clear(lock);
 }
 

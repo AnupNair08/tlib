@@ -11,27 +11,27 @@
 #define WITHOUT_LOCKS 0
 
 
-int mutexTest = 0;
+int spinTest = 0;
 short refstring[4];
 
 void routine1(void *l){
-    if(l) mutex_acquire((mut_t *)l);
-    printf("Routine 1 Before: %d\n",mutexTest);
-    refstring[0] = mutexTest;
-    mutexTest++;
-    printf("Routine 1 After: %d\n",mutexTest);
-    refstring[1] = mutexTest;
-    if(l) mutex_release((mut_t *)l);
+    if(l) spin_acquire((mut_t *)l);
+    printf("Routine 1 Before: %d\n",spinTest);
+    refstring[0] = spinTest;
+    spinTest++;
+    printf("Routine 1 After: %d\n",spinTest);
+    refstring[1] = spinTest;
+    if(l) spin_release((mut_t *)l);
 }
 
 void routine2(void *l){
-    if(l) mutex_acquire((mut_t *)l);
-    printf("Routine 2 Before: %d\n",mutexTest);
-    refstring[2] = mutexTest;
-    mutexTest++;
-    printf("Routine 2 After: %d\n",mutexTest);
-    refstring[3] = mutexTest;
-    if(l) mutex_release((mut_t *)l);
+    if(l) spin_acquire((mut_t *)l);
+    printf("Routine 2 Before: %d\n",spinTest);
+    refstring[2] = spinTest;
+    spinTest++;
+    printf("Routine 2 After: %d\n",spinTest);
+    refstring[3] = spinTest;
+    if(l) spin_release((mut_t *)l);
 }
 
 void testLocks(int type){
@@ -39,7 +39,7 @@ void testLocks(int type){
     mut_t lock;
     mut_t *temp = NULL;
     if(type){
-        mutex_init(&lock);
+        spin_init(&lock);
         temp = &lock;
     } 
     create(&t1,NULL,routine1, (void *)temp,0);
@@ -47,8 +47,8 @@ void testLocks(int type){
     thread_join(t1,NULL);
     thread_join(t2,NULL);
 
-    printf("\nValue of global is %d\n",mutexTest);
-    mutexTest = 0;
+    printf("\nValue of global is %d\n",spinTest);
+    spinTest = 0;
 }
 
 int isConsistent(){

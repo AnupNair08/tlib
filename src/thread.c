@@ -142,7 +142,11 @@ int thread_join(thread t, void **retLocation){
         fflush(stdout);
     #endif
     void *addr = returnCustomTidAddress(&tidList, t);
-    int ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
+    while(*((pid_t*)addr) == t){
+        int ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
+    }
+    //By default, clone wakes up only one futex, so need a way to wake up multiple threads
+    syscall(SYS_futex , addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
     // printf("%d\n",ret);
     // perror("");
     #ifndef DEV
