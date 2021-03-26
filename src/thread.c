@@ -29,11 +29,13 @@
 #define TGKILL 234
 
 singlyLL tidList;
+int handledSignal = 0;
 
 static void init(){
     printf("Library initialised\n");
     //Initialise necessay data structures
     singlyLLInit(&tidList);
+    singlyLLInsert(&tidList, getpid());
 }
 
 /**
@@ -75,7 +77,13 @@ typedef struct funcargs{
     void *arg;
 } funcargs;
 
+void handlesegf(){
+    printf("Thread Seg faulted\n");
+}
 int wrap(void *fa){
+    printf("Signals handled\n");
+    signal(SIGSEGV,handlesegf);
+    handledSignal = 1;
     funcargs *temp;
     temp = (funcargs *)fa;
     temp->f(temp->arg);
@@ -93,6 +101,9 @@ int wrap(void *fa){
  */
 //
 int createOneOne(thread *t,void *attr,void * routine, void *arg){
+    mut_t lock;
+    spin_init(&lock);
+    spin_acquire(&lock);
     static int initState = 0;
     tcb *thread_t = (tcb *)malloc(sizeof(tcb));
     if(!thread_t){
@@ -156,9 +167,22 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
 }
 
 int thread_kill(pid_t tid, int signum){
+    int ret;
+    if(signum == SIGINT || signum == SIGCONT || signum == SIGTSTP){
+       killAllThreads(&tidList, signum);
+       pid_t pid = getpid();
+       ret = syscall(TGKILL, pid, gettid(), signum);
+       if(ret == -1){
+        perror("tgkill");
+        return errno;
+        }
+        return ret;
+    }
+    while(!handledSignal){};
     pid_t pid = getpid();
-    // printf("%d, %d", pid, tid);
-    int ret = syscall(TGKILL, pid, tid, signum);
+    printf("Kill called %d %d\n",pid,tid);
+    // int ret = 0;
+    ret = syscall(TGKILL, pid, tid, signum);
     if(ret == -1){
         perror("tgkill");
         return errno;

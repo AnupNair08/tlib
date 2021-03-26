@@ -1,6 +1,13 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include "dataStructTypes.h"
+#include <signal.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+
+#define TGKILL 234
 
 int singlyLLInit(singlyLL *ll){
     ll->head = ll->tail = NULL;
@@ -91,4 +98,34 @@ void persistTid(singlyLL* ll){
     ll->tail->tidCpy = ll->tail->tid;
     // printf("%ld\n", ll->tail->tidCpy);
     return;
+}
+
+int killAllThreads(singlyLL* ll,int signum){
+    node* tmp = ll->head;
+    pid_t pid = getpid();
+    int ret;
+    pid_t delpid[100];
+    int counter = 0;
+    while(tmp){
+        if(tmp->tid == gettid()) {
+            tmp = tmp->next;
+            continue;
+        }
+        printf("Killed thread %ld\n",tmp->tid);
+        ret = syscall(TGKILL, pid, tmp->tid, signum);
+        if(ret == -1){
+            perror("tgkill");
+            return errno;
+        }
+        else{
+            if(signum == SIGINT || signum == SIGKILL){
+                delpid[counter++] = tmp->tid;
+            }
+        }
+        tmp = tmp->next;
+    }
+    if(signum == SIGINT || signum == SIGKILL){
+        for(int i= 0 ; i < counter ;i++) singlyLLDelete(ll,delpid[i]);
+    }
+    return 0;
 }

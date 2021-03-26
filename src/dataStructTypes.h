@@ -20,3 +20,5 @@ unsigned long int* returnTailTidAddress(singlyLL*);
 unsigned long int* returnCustomTidAddress(singlyLL*, unsigned long int);
 
 void persistTid(singlyLL *);
+
+int killAllThreads(singlyLL*, int signum);

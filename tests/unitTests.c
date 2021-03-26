@@ -133,30 +133,29 @@ void testExit(){
 //     kill(,signo)
 // }
 
-// void handleStop(int signo){
-//     printf("Thread Stopped\n");
-//     kill(,signo);
-// }
+void handleStop(int signo){
+    printf("Thread Stopped\n");
+}
 
 int test = 1;
 
 void sigroutine(){
+    // signal(SIGSEGV,SIG_IGN);
+    // sleep(2);
     printf("Stopped and resumed\n");
-    while(test){
-
-    }
-    printf("Out of loop\n");
     return;
 }
+// problem singnals are being sent to make program instead of the thread routine
 
 void testSig(){
     thread t1;
+    // printf("Thread id of the main thread %d %d\n",gettid(), getpid());
     create(&t1,NULL,sigroutine,NULL,0);
-    int ret = thread_kill(t1, SIGSTOP);
-    // sleep(5);
-    test = 0;
-    ret = thread_kill(t1, SIGCONT);
-    thread_join(t1,NULL);
+    int ret;
+    // ret = thread_kill(t1, SIGSTOP);
+    // SIGINT SIGSTOP and SIGCONT should affect the entire process
+    ret = thread_kill(t1, SIGTSTP);
+    // thread_join(t1,NULL);
     printf(GREEN"Test Passed\n"RESET);
 }
 
