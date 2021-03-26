@@ -70,8 +70,19 @@ void* allocStack(size_t size, size_t guard){
     return stack;
 }
 
+typedef struct funcargs{
+    void (*f)(void *);
+    void *arg;
+} funcargs;
+
+int wrap(void *fa){
+    funcargs *temp;
+    temp = (funcargs *)fa;
+    temp->f(temp->arg);
+}
 
 /**
+ * 
  * @brief Create a One One mapped thread  
  * 
  * @param t Reference to the thread
@@ -103,11 +114,14 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
+        funcargs fa;
+        fa.f = routine;
+        fa.arg = arg;
         void * addr = returnTailTidAddress(&tidList);
-        tid = clone(routine,
+        tid = clone(wrap,
                     thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
                     CLONE_FLAGS,
-                    arg,
+                    (void*)&fa,
                     addr,
                     NULL, 
                     addr);
@@ -119,11 +133,14 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
+        funcargs fa;
+        fa.f = (void (*)(void *))routine;
+        fa.arg = arg;
         void * addr = returnTailTidAddress(&tidList);
-        tid = clone(routine,
+        tid = clone(wrap,
                     thread_stack + STACK_SZ + GUARD_SZ,
                     CLONE_FLAGS,
-                    arg,
+                    (void *)&fa,
                     addr,
                     NULL, 
                     addr);
@@ -140,7 +157,7 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
 
 int thread_kill(pid_t tid, int signum){
     pid_t pid = getpid();
-    printf("%ld, %ld", pid, tid);
+    // printf("%d, %d", pid, tid);
     int ret = syscall(TGKILL, pid, tid, signum);
     if(ret == -1){
         perror("tgkill");

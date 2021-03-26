@@ -128,18 +128,33 @@ void testExit(){
     printf("Joining Complete\n");
 }
 
+// void handleCont(int signo){
+//     printf("Thread Continued\n");
+//     kill(,signo)
+// }
+
+// void handleStop(int signo){
+//     printf("Thread Stopped\n");
+//     kill(,signo);
+// }
+
+int test = 1;
+
 void sigroutine(){
-    sleep(2);
-    printf("Stopped and resumed");
+    printf("Stopped and resumed\n");
+    while(test){
+
+    }
+    printf("Out of loop\n");
     return;
 }
 
 void testSig(){
     thread t1;
     create(&t1,NULL,sigroutine,NULL,0);
-    printf("%ld", t1);
     int ret = thread_kill(t1, SIGSTOP);
-    sleep(5);
+    // sleep(5);
+    test = 0;
     ret = thread_kill(t1, SIGCONT);
     thread_join(t1,NULL);
     printf(GREEN"Test Passed\n"RESET);
