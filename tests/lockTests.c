@@ -7,6 +7,7 @@
 #endif
 #include "tests.h"
 #include "attributetypes.h"
+#include "log.h"
 #define WITH_LOCKS 1
 #define WITHOUT_LOCKS 0
 
@@ -47,7 +48,7 @@ void testLocks(int type){
     thread_join(t1,NULL);
     thread_join(t2,NULL);
 
-    printf("\nValue of global is %d\n",spinTest);
+    log_trace("Value of global is %d",spinTest);
     spinTest = 0;
 }
 
@@ -64,11 +65,11 @@ int main(){
     while(1){
         testLocks(WITHOUT_LOCKS);
         if(!isConsistent()) {
-            printf(RED"Inconsistent values of global\n"RESET);
+            log_error("Inconsistent values of global");
             break;
         }
         sleep(1);
-        printf("Consistent values of global in run %d\n",i);
+        log_trace("Consistent values of global in run %d",i);
         i++;
     }
     printf(GREEN"\nTesting with Locks\n"RESET);
@@ -76,11 +77,11 @@ int main(){
     while(1){
         testLocks(WITH_LOCKS);
         if(!isConsistent()) {
-            printf(RED"Inconsistent values of global\nTest Failed\n"RESET);
+            log_error("Inconsistent values of global\nTest Failed\n");
             break;
         }
         sleep(1);
-        printf("Consistent values of global in run %d\n",i);
+        log_trace("Consistent values of global in run %d",i);
         i++;
         if(i > 5) break;
     }

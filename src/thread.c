@@ -25,14 +25,14 @@
 #include "attributetypes.h"
 #include "dataStructTypes.h"
 #include<limits.h>
-
+#include "log.h"
 #define TGKILL 234
 
 singlyLL tidList;
 int handledSignal = 0;
 
 static void init(){
-    printf("Library initialised\n");
+    log_info("Library initialised\n");
     //Initialise necessay data structures
     singlyLLInit(&tidList);
     singlyLLInsert(&tidList, getpid());
@@ -78,10 +78,11 @@ typedef struct funcargs{
 } funcargs;
 
 void handlesegf(){
-    printf("Thread Seg faulted\n");
+    log_error("Thread Seg faulted\n");
+    exit(0);
 }
 int wrap(void *fa){
-    printf("Signals handled\n");
+    // printf("Signals handled\n");
     signal(SIGSEGV,handlesegf);
     handledSignal = 1;
     funcargs *temp;

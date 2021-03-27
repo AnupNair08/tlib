@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
-
+#include "log.h"
 #define gettid() syscall(SYS_gettid)
 
 jmp_buf buffer;
@@ -41,12 +41,12 @@ void testCreate(){
     for(int i = 0 ;i < 10; i++){
         if(create(&t[i],NULL,routine,(void *)&i,0) == 0){
             spin_acquire(&lock);
-            printf("Thread %d created successfully with id %ld\n",i,t[i]);
+            log_info("Thread %d created successfully with id %ld",i,t[i]);
             spin_release(&lock);
             s++;
         }
         else{
-            printf(RED"Thread creation failed\n");
+            log_error("Thread creation failed\n");
             f++;
         }
     }
@@ -69,11 +69,11 @@ void testJoin(){
     thread t[10];
     for(int i = 0 ;i < 10; i++){
         if(create(&t[i],NULL,routine,(void *)&i,0) == 0){
-            printf("Thread %d created successfully with id %ld\n",i,t[i]);
+            log_info("Thread %d created successfully with id %ld\n",i,t[i]);
             s++;
         }
         else{
-            printf(RED"Thread creation failed\n");
+            log_error("Thread creation failed\n");
             f++;
         }
     }
@@ -101,7 +101,7 @@ void testStack(){
     thread t;
     thread_attr attr;
     if(thread_attr_init(&attr)){
-        printf(RED"Attribute initialisation failed\n");
+        log_error("Attribute initialisation failed\n");
     }
     // void *stack = malloc(8);
     // thread_attr_setStackAddr(&attr,stack);
@@ -111,12 +111,12 @@ void testStack(){
 }
 
 void exitroutine1(){
-    printf("Exiting thread 1\n");
+    log_info("Exiting thread 1");
 } 
 
 
 void exitroutine2(){
-    printf("Exiting thread 2\n");
+    log_info("Exiting thread 2");
 } 
 
 void testExit(){
@@ -126,6 +126,7 @@ void testExit(){
     thread_join(t,NULL);
     thread_join(t2,NULL);
     printf("Joining Complete\n");
+    printf(GREEN"Test Passed\n"RESET);
 }
 
 // void handleCont(int signo){
@@ -165,16 +166,16 @@ void testSig(){
  */
 int main(int argc,char *argv[]){
     setbuf(stdout, NULL);
-    // testCreate();
-    // LINE;
-    // if(setjmp(buffer) == 0)
-    //     testStack();
-    // else{
-    //     printf(GREEN"Test Passed\n"RESET);
-    // }
-    // LINE;
-    // testExit();
-    // LINE;
-    testSig();
+    testCreate();
+    LINE;
+    if(setjmp(buffer) == 0)
+        testStack();
+    else{
+        printf(GREEN"Test Passed\n"RESET);
+    }
+    LINE;
+    testExit();
+    LINE;
+    // testSig();
     return 0;
 }
