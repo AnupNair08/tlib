@@ -25,4 +25,4 @@ int thread_attr_setStack(thread_attr *,size_t);
 size_t thread_attr_getGuard(thread_attr *);
 int thread_attr_setGuard(thread_attr *,size_t);
 
-int thread_attr_setStackAddr(thread_attr *, void *);
+int thread_attr_setStackAddr(thread_attr *, void *,size_t);

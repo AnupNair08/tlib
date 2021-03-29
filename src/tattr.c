@@ -24,22 +24,28 @@ int thread_attr_destroy(thread_attr *t){
 }
 
 int thread_attr_setStack(thread_attr *t, size_t size) {
+    if(!t) return -1;
     t->stackSize = size;
     return 0;
 }
 size_t thread_attr_getStack(thread_attr *t){
+    if(!t) return -1;
     return t->stackSize;
 }
 
 int thread_attr_setGuard(thread_attr *t, size_t size) {
+    if(!t) return -1;
     t->guardSize = size;
     return 0;
 }
 size_t thread_attr_getGuard(thread_attr *t){
+    if(!t) return -1;
     return t->guardSize;
 }
 
-int thread_attr_setStackAddr(thread_attr *t,void *stack){
+int thread_attr_setStackAddr(thread_attr *t,void *stack,size_t size){
+    if(!t) return -1;
     t->stack = stack;
+    t->stackSize = size;
     return 0;
 }
