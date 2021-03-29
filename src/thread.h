@@ -5,7 +5,7 @@ typedef volatile atomic_flag mut_t;
 
 //threadModes : 0 - one-to-one, 1 - many one, 2 - many many
 
-int create(thread *t,void *attr, void *routine,void *arg, int threadMode);
+int thread_create(thread *t,void *attr, void *routine,void *arg, int threadMode);
 int thread_join(thread t, void **retLocation);
 int thread_kill(pid_t t, int signum);
 void thread_exit(void *);

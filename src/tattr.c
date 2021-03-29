@@ -19,6 +19,7 @@ int thread_attr_init(thread_attr *t){
 
 
 int thread_attr_destroy(thread_attr *t){
+    if(!t) return -1;
     t = NULL;
     return 0;
 }

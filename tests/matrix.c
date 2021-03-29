@@ -83,7 +83,7 @@ int testmatrix(){
 	};
 
 	for(short i = 0 ; i < 3 ;i++){
-		create(&threads[i],NULL,multiply,(void *)&temp[i],0);
+		thread_create(&threads[i],NULL,multiply,(void *)&temp[i],0);
 		log_trace("Created");
 		thread_join(threads[i],NULL);
 	}

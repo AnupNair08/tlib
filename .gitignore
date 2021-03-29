@@ -4,3 +4,4 @@ localtests/
 tout
 resources/
 .vscode
+bin/

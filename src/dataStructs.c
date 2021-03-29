@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/syscall.h>
-
+#include "log.h"
 #define TGKILL 234
 
 int singlyLLInit(singlyLL *ll){
@@ -19,7 +19,7 @@ int singlyLLInsert(singlyLL *ll, unsigned long int tid){
     // node *tmp1 = ll->head;
     // printf("LL status before ins\n");
     // while(tmp1){
-    //     printf("%d\n",tmp1->tid);
+    //     log_trace("%d",tmp1->tid);
     //     tmp1 = tmp1->next;
     // }
     if(posix_memalign((void*)&tmp, 8, sizeof(node))){
@@ -44,7 +44,7 @@ int singlyLLDelete(singlyLL *ll, unsigned long int tid){
     #ifdef DEV
     printf("LL status before del and tid is %d\n",tid)  ;
     while(tmp1){
-        printf("%ld ",tmp1->tidCpy);
+        log_error("%ld ",tmp1->tidCpy);
         tmp1 = tmp1->next;
     }
     puts("");

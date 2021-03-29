@@ -13,18 +13,19 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include "log.h"
+#define TEST_STSZ 8192
+#define TEST_GDSZ 2048
 #define gettid() syscall(SYS_gettid)
 
 jmp_buf buffer;
+jmp_buf buffer1;
 
 void routine(void *i){
     int a = 10;
     long b = a * 100;
     // sleep(2 * *(int *)i);
     // sleep(2);
-    flockfile(stdout);
-    // printf("Yes %d\n",*(int *)(i));
-    funlockfile(stdout);
+    // log_trace("thread exited\n");
     return;
 }
 
@@ -34,15 +35,12 @@ void routine(void *i){
  */
 void testCreate(){
     mut_t lock;
-    spin_init(&lock);
     int s = 0,f = 0;
     printf("tlib creation test started...\n");
     thread t[10];
     for(int i = 0 ;i < 10; i++){
-        if(create(&t[i],NULL,routine,(void *)&i,0) == 0){
-            spin_acquire(&lock);
+        if(thread_create(&t[i],NULL,routine,(void *)&i,0) == 0){
             log_info("Thread %d created successfully with id %ld",i,t[i]);
-            spin_release(&lock);
             s++;
         }
         else{
@@ -50,26 +48,35 @@ void testCreate(){
             f++;
         }
     }
-    for(int i = 9 ; i > 0 ;i--)
+    for(int i = 0 ; i < 10 ;i++)
             thread_join(t[i],NULL);
 
-    spin_acquire(&lock);
+
     printf(RESET"Test completed with the following statistics:\n");
     printf(GREEN"Success: %d\n",s);
     printf(RED"Failures: %d\n"RESET,f);
-    spin_release(&lock);
     return;
 }
 
+/**
+ * @brief Functions to test joining on threads
+ * 
+ */
+void routineJoin(){
+    sleep(1);
+}
 void testJoin(){
     //Sleep in different intervals (Pipelined test)
     //Order of join 
     int s = 0,f = 0;
-    printf("tlib creation test started...\n");
+    printf("tlib join test started...\n");
     thread t[10];
-    for(int i = 0 ;i < 10; i++){
-        if(create(&t[i],NULL,routine,(void *)&i,0) == 0){
-            log_info("Thread %d created successfully with id %ld\n",i,t[i]);
+    puts("");
+    log_trace("Joining threads upon creation in a sequential order");
+    for(int i = 0 ;i < 5; i++){
+        if(thread_create(&t[i],NULL,routineJoin,(void *)&i,0) == 0){
+            log_info("Thread %d created successfully with id %ld",i,t[i]);
+            thread_join(t[i],NULL);
             s++;
         }
         else{
@@ -77,9 +84,20 @@ void testJoin(){
             f++;
         }
     }
-    for(int i = 9 ; i > 0 ;i--){
-        thread_join(t[i],NULL);
+    puts("");
+    log_trace("Joining on threads after creation");
+    for(int i = 0 ;i < 5; i++){
+        if(thread_create(&t[i],NULL,routineJoin,(void *)&i,0) == 0){
+            log_info("Thread %d created successfully with id %ld",i,t[i]);
+            s++;
+        }
+        else{
+            log_error("Thread creation failed\n");
+            f++;
+        }
     }
+    for(int i = 0 ; i < 5;i++)
+        thread_join(t[i],NULL);
     printf(RESET"Test completed with the following statistics:\n");
     printf(GREEN"Success: %d\n",s);
     printf(RED"Failures: %d\n"RESET,f);
@@ -97,85 +115,163 @@ void handleseg(){
     longjmp(buffer,1);
 }
 void testStack(){
+    printf("tlib stack test started...\n");
+
     signal(SIGSEGV,handleseg);
     thread t;
     thread_attr attr;
     if(thread_attr_init(&attr)){
         log_error("Attribute initialisation failed\n");
     }
-    // void *stack = malloc(8);
-    // thread_attr_setStackAddr(&attr,stack);
     thread_attr_setStack(&attr,8);
-    create(&t,&attr,routine,NULL,0);
+    thread_create(&t,&attr,routine,NULL,0);
     return;
 }
 
-void exitroutine1(){
+
+void exitroutine1(void *lock){
+
     log_info("Exiting thread 1");
+
 } 
 
+void exitroutine2(void *lock){
 
-void exitroutine2(){
     log_info("Exiting thread 2");
-} 
 
+} 
+/**
+ * @brief Checking exit of threads
+ * 
+ */
 void testExit(){
+    printf("tlib exit test started...\n");
     thread t,t2;
-    create(&t,NULL,exitroutine1,NULL,0);
-    create(&t2,NULL,exitroutine2,NULL,0);
+    mut_t lock;
+    spin_init(&lock);
+    thread_create(&t,NULL,exitroutine1,(void *)&lock,0);
+    thread_create(&t2,NULL,exitroutine2,(void *)&lock,0);
     thread_join(t,NULL);
     thread_join(t2,NULL);
     printf("Joining Complete\n");
     printf(GREEN"Test Passed\n"RESET);
 }
 
-// void handleCont(int signo){
-//     printf("Thread Continued\n");
-//     kill(,signo)
-// }
-
-void handleStop(int signo){
-    printf("Thread Stopped\n");
+void handlesegfault(int signo){
+    log_info("Thread received signal number %d",signo);
+    longjmp(buffer1,1);
 }
 
-int test = 1;
 
 void sigroutine(){
-    // signal(SIGSEGV,SIG_IGN);
-    // sleep(2);
-    printf("Stopped and resumed\n");
+    signal(SIGSEGV,handlesegfault);
+    int i = 0;
+    while(i < 5){puts("F"); sleep(1); i++;}
+    log_info("Exiting");
     return;
 }
-// problem singnals are being sent to make program instead of the thread routine
 
+void sigroutine1(){
+    while(1) log_trace("Waiting to be terminated");
+}
+
+void handlestop(){
+    log_info("Process received signal");
+    return;
+}
+
+/**
+ * @brief Functions to test signal handling  
+ * 
+ */
 void testSig(){
-    thread t1;
-    // printf("Thread id of the main thread %d %d\n",gettid(), getpid());
-    create(&t1,NULL,sigroutine,NULL,0);
+    // Send a thread specific signal
+    signal(SIGINT,handlestop);
     int ret;
-    // ret = thread_kill(t1, SIGSTOP);
-    // SIGINT SIGSTOP and SIGCONT should affect the entire process
-    ret = thread_kill(t1, SIGTSTP);
-    // thread_join(t1,NULL);
+    if(setjmp(buffer1) == 0){
+        thread t1;
+        thread_create(&t1,NULL,sigroutine,NULL,0);
+        ret = thread_kill(t1, SIGSTOP);
+        thread_join(t1,NULL);
+    }
+    else{
+        // Send a process specific signal
+        // thread t2;
+        // create(&t2,NULL,sigroutine1,NULL,0);
+        // ret = thread_kill(t2, SIGALRM);
+        // thread_join(t2,NULL);
+    } 
     printf(GREEN"Test Passed\n"RESET);
 }
 
+
+/**
+ * @brief Functions to check handling of attributes viz. stack, stack and guard page sizes. 
+ * 
+ */
+
+void attrroutine(){
+    puts("Thread spawned with all attributes");
+}
+void testAttr(){
+    printf("tlib attribute test started...\n");
+    short err = 0; 
+    thread t1;
+    void *newstack = malloc(TEST_STSZ/2);
+    thread_attr a;
+    thread_attr_init(&a);
+    thread_attr_setStack(&a,TEST_STSZ) == -1 ? log_error("Failed to set new stack size"),err=1 : log_info("Stack size changed");
+    thread_attr_setGuard(&a,TEST_GDSZ)  == -1 ? log_error("Failed to set new guard page size"),err=1 : log_info("Guard page size changed");
+    thread_attr_getStack(&a) != TEST_STSZ ? log_error("Stack size does not match"),err=1 : log_info("Set stack size to %d",TEST_STSZ);
+
+    thread_attr_setStackAddr(&a,newstack,TEST_STSZ/2)  == -1 ? log_error("Failed to set new stack"),err=1 : log_info("Stack changed");  
+    thread_attr_getGuard(&a) != TEST_GDSZ ? log_error("Guard page size does not match"),err=1 : log_info("Set guard page size to %d",TEST_GDSZ);
+    if(err){
+        printf(RED"Test failed"RESET);
+        return;
+    }
+    thread_create(&t1,&a,attrroutine,NULL,0);
+    thread_join(t1,NULL);
+    thread_attr_destroy(&a);
+    printf(GREEN"Test Passed\n"RESET);
+    return;
+}
+int i = 0;
+void lockroutine(void *lock){
+    mutex_acquire((mut_t *)lock);
+    printf("Critical Section\n");
+    i++;
+    printf("%d\n",i);
+    mutex_release((mut_t *)lock);
+} 
+void testLock(){
+    thread t,g;
+    mut_t lock;
+    mutex_init(&lock);
+    thread_create(&t,NULL,lockroutine,(void *)&lock,0);
+    thread_create(&g,NULL,lockroutine,(void *)&lock,0);
+    thread_join(t,NULL);
+    thread_join(g,NULL);
+}
 /**
  * @brief Caller function
  * 
  */
 int main(int argc,char *argv[]){
     setbuf(stdout, NULL);
-    testCreate();
-    LINE;
-    if(setjmp(buffer) == 0)
-        testStack();
-    else{
-        printf(GREEN"Test Passed\n"RESET);
-    }
-    LINE;
-    testExit();
-    LINE;
-    // testSig();
+    // testCreate();
+    // LINE;
+    // if(setjmp(buffer) == 0)
+    //     testStack();
+    // else{
+    //     printf(GREEN"Test Passed\n"RESET);
+    // }
+    // LINE;
+    // testJoin();
+    // LINE;
+    // testExit();
+    // LINE;
+    testAttr();
+    // testLock();
     return 0;
 }

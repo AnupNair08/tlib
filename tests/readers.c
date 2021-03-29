@@ -59,9 +59,9 @@ int main()
     spin_init(&y);
     for(i=0;i<n2;i++)
     {
-        create(&writerthreads[i],NULL,reader,NULL,0);
+        thread_create(&writerthreads[i],NULL,reader,NULL,0);
         thread_join(writerthreads[i],NULL);
-        create(&readerthreads[i],NULL,writer,NULL,0);
+        thread_create(&readerthreads[i],NULL,writer,NULL,0);
         thread_join(readerthreads[i],NULL);
     }
     // for(i=0;i<n2;i++)

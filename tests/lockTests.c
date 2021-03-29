@@ -43,8 +43,8 @@ void testLocks(int type){
         spin_init(&lock);
         temp = &lock;
     } 
-    create(&t1,NULL,routine1, (void *)temp,0);
-    create(&t2,NULL,routine2, (void *)temp,0);
+    thread_create(&t1,NULL,routine1, (void *)temp,0);
+    thread_create(&t2,NULL,routine2, (void *)temp,0);
     thread_join(t1,NULL);
     thread_join(t2,NULL);
 

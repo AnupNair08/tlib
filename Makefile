@@ -1,8 +1,12 @@
-CC=gcc
-CFLAGS= 
-SUBDIRS = doxygen
+CC := gcc
+CFLAGS := -g -DLOG_USE_COLOR 
+SUBDIRS := doxygen bin
+SRC := src/*.c
+OBJ := thread.o tattr.o dataStructs.o locks.o log.o
+TESTS := tests/*.c
+BIN := bin/
 
-.PHONY: init
+.PHONY: init clean alltest tlib
 
 init:
 	@for dir in $(SUBDIRS); \
@@ -13,37 +17,26 @@ init:
 			fi \
 		done
 
-test: src/caller.c src/thread.c src/dataStructs.c
-	$(CC) -c src/caller.c src/thread.c src/tattr.c src/dataStructs.c
-	$(CC) caller.o thread.o tattr.o dataStructs.o -o tout
+# Compile all the binaries for the library
+# Stores the binaries in the bin/ directory
+tlib: $(SRC)
+	$(CC) $(CFLAGS) -Isrc/ -c $(SRC) 
+	@mv *.o $(BIN)
 
+# Compile all binaries for the test suite
+# All binaries and executable files get stored in bin/ directory
+alltest: $(TESTS) $(SRC)
+	$(CC) $(CFLAGS) -Isrc/ -c $(TESTS) $(SRC) 
+	$(CC) unitTests.o $(OBJ) -o unitTests
+	$(CC) lockTests.o $(OBJ) -o lockTests
+	$(CC) matrix.o $(OBJ) -o matrix
+	$(CC) readers.o $(OBJ) -o readers
 
-alltest: tests/unitTests.c tests/lockTests.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c
-	@$(CC) -DLOG_USE_COLOR -Isrc/ -c tests/unitTests.c tests/lockTests.c src/thread.c src/tattr.c src/log.c  src/dataStructs.c src/locks.c 
-	@$(CC) -g unitTests.o thread.o tattr.o dataStructs.o locks.o log.o -o unitTests
-	@$(CC) -g lockTests.o thread.o tattr.o dataStructs.o locks.o log.o -o lockTests
+	@mv *.o unitTests lockTests matrix readers $(BIN)
 	
-	@./unitTests 
-	@rm unitTests
-	@./lockTests
-	@rm lockTests
-
-unittest: tests/unitTests.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c tests/matrix.c
-	@$(CC) -DLOG_USE_COLOR -Isrc/ -c tests/unitTests.c tests/lockTests.c tests/matrix.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c
-	@$(CC) -g unitTests.o thread.o tattr.o dataStructs.o locks.o log.o -o  unitTests
-	@$(CC) -g matrix.o thread.o tattr.o dataStructs.o locks.o log.o -o  matrix
-
-	# ./matrix
-	# @rm unitTests
-	@./unitTests 
-
 	
-readers: src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c tests/readers.c
-	@$(CC) -DLOG_USE_COLOR -Isrc/ -c tests/readers.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c
-	@$(CC) -g thread.o tattr.o dataStructs.o readers.o locks.o log.o -o  readers
-
 clean:
-	@rm *.o
+	@rm $(BIN)*.o 
 
 docs:
 	doxygen doxyconfig

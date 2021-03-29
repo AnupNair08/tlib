@@ -26,16 +26,19 @@
 #include "dataStructTypes.h"
 #include<limits.h>
 #include "log.h"
-#define TGKILL 234
 
 singlyLL tidList;
 int handledSignal = 0;
 
+/**
+ * @brief Library initialzer
+ * 
+ */
 static void init(){
     log_info("Library initialised\n");
     //Initialise necessay data structures
     singlyLLInit(&tidList);
-    singlyLLInsert(&tidList, getpid());
+    // singlyLLInsert(&tidList, getpid());
 }
 
 /**
@@ -48,7 +51,7 @@ static void init(){
  * @param threadMode Mapping model to be used (0 = One One , 1 = Many One, 2 = Many Many)
  * @return thread 
  */
-int create(thread *t,void *attr,void * routine,void *arg, int threadMode){
+int thread_create(thread *t,void *attr,void * routine,void *arg, int threadMode){
     switch(threadMode){
         case 0:
             return createOneOne(t, attr,routine, arg);
@@ -61,8 +64,7 @@ int create(thread *t,void *attr,void * routine,void *arg, int threadMode){
 
 
 
-void* allocStack(size_t size, size_t guard){
-    
+static void* allocStack(size_t size, size_t guard){    
     void *stack = NULL;  
     //Align the memory to a 64 bit compatible page size and associate a guard area for the stack 
     if(posix_memalign(&stack,GUARD_SZ,size + guard) || mprotect(stack,guard, PROT_NONE)){
@@ -72,18 +74,18 @@ void* allocStack(size_t size, size_t guard){
     return stack;
 }
 
-typedef struct funcargs{
-    void (*f)(void *);
-    void *arg;
-} funcargs;
 
-void handlesegf(){
-    log_error("Thread Seg faulted\n");
-    exit(0);
-}
-int wrap(void *fa){
+/**
+ * @brief Wrapper for the routine passed to the thread
+ * 
+ * @param fa Function pointer of the routine passed to the thread
+ * @return int 
+ */
+static int wrap(void *fa){
     // printf("Signals handled\n");
-    signal(SIGSEGV,handlesegf);
+    signal(SIGINT,SIG_DFL);
+    signal(SIGSTOP,SIG_DFL);
+    signal(SIGCONT,SIG_DFL);
     handledSignal = 1;
     funcargs *temp;
     temp = (funcargs *)fa;
@@ -100,17 +102,9 @@ int wrap(void *fa){
  * @param arg Arguments to the routine
  * @return thread 
  */
-//
 int createOneOne(thread *t,void *attr,void * routine, void *arg){
-    mut_t lock;
-    spin_init(&lock);
-    spin_acquire(&lock);
     static int initState = 0;
-    tcb *thread_t = (tcb *)malloc(sizeof(tcb));
-    if(!thread_t){
-        perror("");
-        return errno;
-    }
+
     thread tid;
     void *thread_stack;
     int status;
@@ -118,6 +112,9 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
         initState = 1;
         init();
     }
+    funcargs fa;
+    fa.f = routine;
+    fa.arg = arg;
     singlyLLInsert(&tidList, 0);
     if(attr){
         thread_attr *attr_t = (thread_attr *)attr;
@@ -126,10 +123,12 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
-        funcargs fa;
-        fa.f = routine;
-        fa.arg = arg;
+ 
         void * addr = returnTailTidAddress(&tidList);
+         if(addr == NULL){
+            log_error("Thread address not found");
+            return -1;
+        }
         tid = clone(wrap,
                     thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
                     CLONE_FLAGS,
@@ -145,10 +144,11 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
-        funcargs fa;
-        fa.f = (void (*)(void *))routine;
-        fa.arg = arg;
         void * addr = returnTailTidAddress(&tidList);
+        if(addr == NULL){
+            log_error("Thread address not found");
+            return -1;
+        }
         tid = clone(wrap,
                     thread_stack + STACK_SZ + GUARD_SZ,
                     CLONE_FLAGS,
@@ -169,7 +169,7 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
 
 int thread_kill(pid_t tid, int signum){
     int ret;
-    if(signum == SIGINT || signum == SIGCONT || signum == SIGTSTP){
+    if(signum == SIGINT || signum == SIGCONT || signum == SIGSTOP){
        killAllThreads(&tidList, signum);
        pid_t pid = getpid();
        ret = syscall(TGKILL, pid, gettid(), signum);
@@ -181,8 +181,6 @@ int thread_kill(pid_t tid, int signum){
     }
     while(!handledSignal){};
     pid_t pid = getpid();
-    printf("Kill called %d %d\n",pid,tid);
-    // int ret = 0;
     ret = syscall(TGKILL, pid, tid, signum);
     if(ret == -1){
         perror("tgkill");
@@ -193,36 +191,40 @@ int thread_kill(pid_t tid, int signum){
 
 int thread_join(thread t, void **retLocation){
     int status;
-    #ifndef DEV
-        printf("Futex waiting for thread %ld\n", t);
-        fflush(stdout);
-    #endif
     void *addr = returnCustomTidAddress(&tidList, t);
+
     if(addr == NULL){
         return ESRCH;
     }
     if(*((pid_t*)addr) == 0){
+        // printf("Thread already exited %d\n", EINVAL);
+        singlyLLDelete(&tidList, t);
         return EINVAL;
     }
+    
+    int ret;
+    // log_error("%d %d",*(pid_t *)(addr),t);
     while(*((pid_t*)addr) == t){
-        int ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
+        ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
+        // printf("Futex retval 1 %d\n", ret);
     }
-    //By default, clone wakes up only one futex, so need a way to wake up multiple threads
     syscall(SYS_futex , addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-    #ifndef DEV
-        printf("Futex done with thread %ld\n", t);
-        fflush(stdout);
-    #endif
     singlyLLDelete(&tidList, t);
-    return 0;
+    
+    // printf("Futex retval %d\n", ret);
+    if(retLocation) *retLocation = (void *)&ret;
+    return ret;
 }
 
 
 void thread_exit(void *ret){
     void *addr = returnCustomTidAddress(&tidList, gettid());
+    if(addr == NULL){
+        log_info("Thread already exited");
+        return;
+    }
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
     singlyLLDelete(&tidList, gettid());
-    // _exit(0);
     kill(SIGINT,gettid());
     return;
 }

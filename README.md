@@ -1,6 +1,20 @@
-### tlib: Multithreading library for Linux kernel
+## tlib: Multithreading library for Linux kernel
 
-#### Mapping models
+### Building
+```
+Run make in the root directory
+To compile the binaries run
+make tlib
+
+To compile the test suite
+make alltest
+
+To run the tests
+./run.sh
+``` 
+
+
+### Mapping models
 
 1. <b>One-one model</b>
 	- One one model will use the clone system call to create a corresponding kernel thread for each user level thread. It is referred to as LWP.
@@ -13,6 +27,7 @@
 
 
 
+# One One Model
 
 ## Thread Creation
 Thread creation lies on clone system call entirely for the one-one model. `clone()` system call with the right flags helps replicate the concept of lightweight process. 
@@ -48,3 +63,16 @@ The threads can have muliple attributes that define the creation and joining of 
 3. Stack Address - Defines the stack region that the thread uses.
 
 Note that the attributes object should be initialized before use and should be passed as an argument to the call of the `clone()` and these attributes should be set using the respective setter functions. A good programming practise is to free the attribute object by calling the attribute_destroy function call. 
+
+## Thread Join
+
+## Thread Exit
+
+## Locking Mechanisms
+1. Mutex
+2. Spinlocks
+
+## Signal Handling
+
+## References
+<a href="https://github.com/rxi/log.c">Logging Library</a>
