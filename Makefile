@@ -28,13 +28,20 @@ alltest: tests/unitTests.c tests/lockTests.c src/thread.c src/tattr.c src/dataSt
 	@./lockTests
 	@rm lockTests
 
-unittest: tests/unitTests.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c
-	@$(CC) -DLOG_USE_COLOR -Isrc/ -c tests/unitTests.c tests/lockTests.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c
+unittest: tests/unitTests.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c tests/matrix.c
+	@$(CC) -DLOG_USE_COLOR -Isrc/ -c tests/unitTests.c tests/lockTests.c tests/matrix.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c
 	@$(CC) -g unitTests.o thread.o tattr.o dataStructs.o locks.o log.o -o  unitTests
-	
+	@$(CC) -g matrix.o thread.o tattr.o dataStructs.o locks.o log.o -o  matrix
+
+	# ./matrix
+	# @rm unitTests
 	@./unitTests 
-	@rm unitTests
+
 	
+readers: src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c tests/readers.c
+	@$(CC) -DLOG_USE_COLOR -Isrc/ -c tests/readers.c src/thread.c src/tattr.c src/dataStructs.c src/locks.c src/log.c
+	@$(CC) -g thread.o tattr.o dataStructs.o readers.o locks.o log.o -o  readers
+
 clean:
 	@rm *.o
 
