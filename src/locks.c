@@ -12,7 +12,7 @@ int spin_init(mut_t* lock){
 }
 int spin_acquire(mut_t *lock){
     while(atomic_flag_test_and_set(lock)){
-        log_trace("Waiting for lock");
+        // log_trace("Waiting for lock");
     };
 }
 
@@ -38,6 +38,7 @@ int mutex_acquire(mut_t *lock){
 
 int mutex_release(mut_t *lock){
     atomic_flag_clear(lock);
+    syscall(SYS_futex , lock, FUTEX_WAKE, 1, NULL, NULL, 0);
     log_trace("Lock released");
 }
 

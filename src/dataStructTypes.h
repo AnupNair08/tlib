@@ -11,7 +11,7 @@ typedef struct singlyLL{
 
 int singlyLLInit(singlyLL*);
 
-int singlyLLInsert(singlyLL*, unsigned long int);
+node* singlyLLInsert(singlyLL*, unsigned long int);
 
 int singlyLLDelete(singlyLL*, unsigned long int);
 
@@ -19,7 +19,7 @@ unsigned long int* returnTailTidAddress(singlyLL*);
 
 unsigned long int* returnCustomTidAddress(singlyLL*, unsigned long int);
 
-void persistTid(singlyLL *);
+void persistTid(singlyLL *, unsigned long int);
 
 int killAllThreads(singlyLL*, int signum);
 
@@ -37,3 +37,4 @@ typedef struct tcbQueue {
 
 int addThread(tcbQueue *, tcb *);
 tcb* getNextThread(tcbQueue *);
+void printAllNodes(singlyLL *);

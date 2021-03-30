@@ -110,7 +110,7 @@ int createManyOne(thread *t, void *attr, void *routine, void *arg){
     fa.arg = arg;
     fa.f = routine;
     // Context of thread is modified to accepts timer interrupts
-    makecontext(&thread_context,wrapRoutine,1,(void *)&fa);
+    // makecontext(&thread_context,wrapRoutine,1,(void *)&fa);
     temp->context = thread_context;
     // Add the thread to list of runnable threads
     addThread(&__runnableList,temp);

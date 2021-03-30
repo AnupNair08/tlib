@@ -16,19 +16,12 @@ int singlyLLInit(singlyLL *ll){
     return 0;
 }
 
-int singlyLLInsert(singlyLL *ll, unsigned long int tid){
+node* singlyLLInsert(singlyLL *ll, unsigned long int tid){
     node* tmp;
-    // node *tmp1 = ll->head;
-    // printf("LL status before ins\n");
-    // while(tmp1){
-    //     log_trace("%d",tmp1->tid);
-    //     tmp1 = tmp1->next;
-    // }
-    if(posix_memalign((void*)&tmp, 8, sizeof(node))){
+    if(posix_memalign((void**)&tmp, 8, sizeof(node))){
         perror("ll alloc");
-        return -1;
+        return NULL;
     }
-    int temp = tid;
     tmp->tid = tid;
     tmp->next = NULL;
     if(ll->head==NULL){
@@ -38,7 +31,7 @@ int singlyLLInsert(singlyLL *ll, unsigned long int tid){
         ll->tail->next = tmp;
         ll->tail = tmp;
     }
-    return 0;
+    return tmp;
 }
 
 int singlyLLDelete(singlyLL *ll, unsigned long int tid){
@@ -96,12 +89,6 @@ unsigned long int* returnCustomTidAddress(singlyLL* ll, unsigned long int tid){
     return NULL;
 }
 
-void persistTid(singlyLL* ll){
-    ll->tail->tidCpy = ll->tail->tid;
-    // printf("%ld\n", ll->tail->tidCpy);
-    return;
-}
-
 int killAllThreads(singlyLL* ll,int signum){
     node* tmp = ll->head;
     pid_t pid = getpid();
@@ -132,6 +119,16 @@ int killAllThreads(singlyLL* ll,int signum){
     return 0;
 }
 
+void printAllNodes(singlyLL *l){
+    node* tmp = l->head;
+    while(tmp){
+        printf("tid%ld tidCpy%ld-->",  tmp->tid, tmp->tidCpy);
+        fflush(stdout);
+        tmp = tmp->next;
+    }
+    printf("\n");
+    return;
+}
 
 
 

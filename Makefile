@@ -29,7 +29,7 @@ alltest: $(TESTS) $(SRC)
 	$(CC) $(CFLAGS) -Isrc/ -c $(TESTS) $(SRC) 
 	$(CC) unitTests.o $(OBJ) -o unitTests
 	$(CC) lockTests.o $(OBJ) -o lockTests
-	$(CC) matrix.o $(OBJ) -o matrix
+	$(CC) matrix.o $(OBJ) -o matrix 
 	$(CC) readers.o $(OBJ) -o readers
 	$(CC) manyTests.o $(OBJ) -o manyTests
 

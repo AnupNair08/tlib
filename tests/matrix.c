@@ -13,94 +13,137 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include "log.h"
-mut_t lock;
-typedef long ll;
-ll **result;
-typedef struct arguments{
-	ll b1;
-	ll row_low;
-	ll row_high;
-	ll col_low;
-	ll col_high;
-	ll **mat1;
-	ll **mat2;
-} arguments;
-
-void accept(ll **mat,ll m, ll n){
-	for(ll i = 0; i < m; i++){
-		mat[i] = (ll *)malloc(n*sizeof(ll));
-	}
-	for(ll i = 0 ; i < m ;i++){
-		for(ll j = 0 ; j < n; j++){
-			scanf("%ld", &mat[i][j]);
-		}
-	}
-	return;
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+typedef struct arg_struct{
+    int rowFrom;
+    int rowTo;
+    int numCols1;
+    int numCols2;
+    int** res;
+    int** arr1;
+    int** arr2;
+} arg_struct;
+int readarray(int*** arr, int r, int c){
+    *arr = (int**)malloc(r*sizeof(int*));
+    if(*arr == NULL){
+        perror("Error");
+        return errno;
+    }
+    for(int i = 0; i < r; i++){
+        (*arr)[i] = (int*)malloc(c*sizeof(int));
+        if((*arr)[i] == NULL){
+            perror("Error");
+            return errno;
+        }
+    }
+    for(int i = 0; i < r; i++){
+        for(int j = 0; j < c; j++){
+            scanf("%d", &((*arr)[i][j]));
+        }
+    }
+    return 0;
 }
-
-void* multiply(void *arg){
-	// sleep(1);
-	spin_acquire(&lock);
-	arguments *arg1 = (arguments *)arg;
-	// printf("%ld %ld %ld %ld\n",arg1->row_low,arg1->row_high, arg1->col_low,arg1->col_high);
-	for(ll i = arg1->row_low; i < arg1->row_high;i++){
-		for(ll j = arg1->col_low; j < arg1->col_high; j++){
-			for(ll k = 0 ; k < arg1->b1; k++){
-				result[i][j] += arg1->mat1[i][k] * arg1->mat2[k][j]; 
-			}
-		}
-	}
-	spin_release(&lock);
-	return NULL;
-}
-
-void initResult(ll a, ll d){
-	result = (ll **)calloc(a,sizeof(ll *));
-	for(ll i = 0 ; i < a;i++){
-		result[i] = (ll *)calloc(d,sizeof(ll));
-	}
-}
-int testmatrix(){
-	spin_init(&lock);
-	thread threads[3];
-	ll a,b,c,d;
-
-	scanf("%ld %ld",&a,&b);
-	ll **m1 = (ll **)malloc(a*sizeof(ll *));
-	accept(m1,a,b);
-	scanf("%ld %ld",&c,&d);
-	if(b != c){
-		return -1;
-	}
-	ll **m2 = (ll **)malloc(c*sizeof(ll *)); 
-	accept(m2,c,d);
-	initResult(a, d);
-	
-	arguments temp[3] = {
-		{b, 0, a, 0, d/3, m1, m2},
-		{b, 0, a, d/3, 2*d/3, m1, m2},
-		{b, 0, a, 2*d/3, d, m1, m2}
-	};
-
-	for(short i = 0 ; i < 3 ;i++){
-		thread_create(&threads[i],NULL,multiply,(void *)&temp[i],0);
-		log_trace("Created");
-	}
-	int ret;
-	for(short i = 0 ; i < 3 ; i++){
-		// log_trace("%d\n",ret);
-		thread_join(threads[i],NULL);
-	}
-	printf("%ld %ld\n",a,d);
-	for(ll i = 0; i < a;i++){
-		for(ll j = 0 ; j < d; j++){
-			printf("%ld ",result[i][j]);
-		}
-		if(i != a - 1)
-			printf("\n");
-	}
+void* partMatMul(void* argsStruct){
+    arg_struct* args = (arg_struct*)argsStruct;
+    int rowFrom = args->rowFrom;
+    int rowTo = args->rowTo;
+    int numCols1 = args->numCols1;
+    int numCols2 = args->numCols2;
+    int** arr1 = args->arr1;
+    int** arr2 = args->arr2;
+    int sum = 0;
+    if(rowFrom == -1 || rowTo == -1){
+        return NULL;
+    }
+    for(int i = rowFrom; i <= rowTo; i++){
+        for(int j = 0; j < numCols2; j++){
+            sum = 0;
+            for(int k = 0; k < numCols1; k++){
+                sum+=arr1[i][k]*arr2[k][j];
+            }
+            (args->res)[i][j] = sum;
+        }
+    }
+    return NULL;
 }
 int main(){
-	testmatrix();
-	return 0;
+    int r1, r2, c1, c2, **res;
+    int **arr1=NULL, **arr2=NULL;
+    scanf("%d", &r1);
+    scanf("%d", &c1);
+    if(readarray(&arr1, r1, c1)){
+        return errno;
+    }
+    scanf("%d", &r2);
+    scanf("%d", &c2);
+    if(c1!=r2){
+        printf("Incompatible arrays, multiplication not possible.\n");
+        return 0;
+    }
+    if(readarray(&arr2, r2, c2)){
+        return errno;
+    }
+    res = (int**)malloc(sizeof(int*)*r1);
+    if(res == NULL){
+        perror("Error in allocating result array");
+        return errno;
+    }
+    for(int i = 0; i < r1; i++){
+        res[i] = (int*)malloc(c2*sizeof(int));
+        if(res[i] == NULL){
+            perror("Error");
+            return errno;
+        }
+    }
+    struct arg_struct args[3];
+    int row_parts = r1/3;
+    for(int i = 0; i < 3; i++){
+        args[i].rowFrom = -1;
+        args[i].rowTo = -1;
+        args[i].res = res;
+        args[i].arr1 = arr1;
+        args[i].arr2 = arr2;
+        args[i].numCols1 = c1;
+        args[i].numCols2 = c2;
+    }   
+    args[0].rowFrom = 0;
+    for(int i = 0; i < 3; i++){
+        args[i].rowTo = row_parts-1;
+    }
+    for(int i = 0; i < r1%3; i++){
+        args[i].rowTo += 1;
+    }
+    for(int i = 1; i <= 2; i++){
+        args[i].rowFrom = args[i-1].rowTo + 1;
+        args[i].rowTo += args[i].rowFrom;
+    }
+    thread threads[3];
+    for(int i = 0; i < 3; i++){
+        thread_create(&threads[i], NULL, partMatMul, &args[i], 0);
+		thread_join(threads[i], NULL);
+    }
+    for(int i = 0; i < 3; i++){
+    }
+    printf("%d %d\n", r1, c2);
+    for(int i = 0; i < r1; i++){
+        for(int j = 0; j < c2; j++){
+            printf("%d ", res[i][j]);
+        }
+        printf("\n");
+    }
+    for(int i = 0; i < r1; i++){
+        free(res[i]);
+    }
+    free(res);
+    for(int i = 0; i < r1; i++){
+        free(arr1[i]);
+    }
+    free(arr1);
+    for(int i = 0; i < r2; i++){
+        free(arr2[i]);
+    }
+    free(arr2);
+    return 0;
 }
