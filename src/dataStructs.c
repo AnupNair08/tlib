@@ -1,12 +1,14 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include "tlibtypes.h"
 #include "dataStructTypes.h"
 #include <signal.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include "log.h"
+
 #define TGKILL 234
 
 int singlyLLInit(singlyLL *ll){
@@ -128,4 +130,38 @@ int killAllThreads(singlyLL* ll,int signum){
         for(int i= 0 ; i < counter ;i++) singlyLLDelete(ll,delpid[i]);
     }
     return 0;
+}
+
+
+
+
+int addThread(tcbQueue *t, tcb *thread_tcb){
+    qnode *temp = (qnode *)malloc(sizeof(qnode));
+    if(!temp) return -1;
+    temp->tcbnode = thread_tcb;
+    temp->next = NULL;
+
+    if(t->front == NULL){
+        t->front = temp;
+        t->back = temp;
+        t->len++;
+        return 0;
+    }
+    t->back->next = temp;
+    t->back = temp;
+    t->len++;
+    return 0;
+}
+
+tcb* getNextThread(tcbQueue *t){
+    if(t->front){
+        log_trace("%x",t->front);
+        tcb *temp = t->front->tcbnode;
+        qnode *tobedelted = t->front;
+        t->front = tobedelted->next;
+        t->len--;
+        free(tobedelted);
+        return temp;
+    }
+    return NULL;
 }

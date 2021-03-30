@@ -2,7 +2,7 @@ CC := gcc
 CFLAGS := -g -DLOG_USE_COLOR 
 SUBDIRS := doxygen bin
 SRC := src/*.c
-OBJ := thread.o tattr.o dataStructs.o locks.o log.o
+OBJ := thread.o tattr.o dataStructs.o locks.o log.o manyone.o
 TESTS := tests/*.c
 BIN := bin/
 
@@ -31,8 +31,10 @@ alltest: $(TESTS) $(SRC)
 	$(CC) lockTests.o $(OBJ) -o lockTests
 	$(CC) matrix.o $(OBJ) -o matrix
 	$(CC) readers.o $(OBJ) -o readers
+	$(CC) manyTests.o $(OBJ) -o manyTests
 
-	@mv *.o unitTests lockTests matrix readers $(BIN)
+
+	@mv *.o unitTests lockTests matrix readers manyTests $(BIN)
 	
 	
 clean:

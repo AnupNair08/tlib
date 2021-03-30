@@ -85,11 +85,11 @@ int testmatrix(){
 	for(short i = 0 ; i < 3 ;i++){
 		thread_create(&threads[i],NULL,multiply,(void *)&temp[i],0);
 		log_trace("Created");
-		thread_join(threads[i],NULL);
 	}
 	int ret;
 	for(short i = 0 ; i < 3 ; i++){
 		// log_trace("%d\n",ret);
+		thread_join(threads[i],NULL);
 	}
 	printf("%ld %ld\n",a,d);
 	for(ll i = 0; i < a;i++){

@@ -191,7 +191,7 @@ int thread_kill(pid_t tid, int signum){
 
 int thread_join(thread t, void **retLocation){
     int status;
-    void *addr = returnCustomTidAddress(&tidList, t);
+    void *addr = (void *)returnCustomTidAddress(&tidList, t);
 
     if(addr == NULL){
         return ESRCH;
@@ -205,7 +205,7 @@ int thread_join(thread t, void **retLocation){
     int ret;
     // log_error("%d %d",*(pid_t *)(addr),t);
     while(*((pid_t*)addr) == t){
-        ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
+        ret = syscall(SYS_futex ,addr, FUTEX_WAIT, t, NULL, NULL, 0);
         // printf("Futex retval 1 %d\n", ret);
     }
     syscall(SYS_futex , addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
@@ -227,12 +227,6 @@ void thread_exit(void *ret){
     singlyLLDelete(&tidList, gettid());
     kill(SIGINT,gettid());
     return;
-}
-
-//Handles ManyOne thread creation
-int createManyOne(thread *t, void *attr,void * routine, void *arg){
-    /*ManyOne Code*/
-    return 0;
 }
 
 //Handles ManyMany thread creation
