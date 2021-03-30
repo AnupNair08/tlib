@@ -259,19 +259,19 @@ void testLock(){
  */
 int main(int argc,char *argv[]){
     setbuf(stdout, NULL);
-    // testCreate();
-    // LINE;
-    // if(setjmp(buffer) == 0)
-    //     testStack();
-    // else{
-    //     printf(GREEN"Test Passed\n"RESET);
-    // }
-    // LINE;
+    testCreate();
+    LINE;
+    if(setjmp(buffer) == 0)
+        testStack();
+    else{
+        printf(GREEN"Test Passed\n"RESET);
+    }
+    LINE;
     // testJoin();
-    // LINE;
-    // testExit();
-    // LINE;
+    LINE;
+    testExit();
+    LINE;
     testAttr();
-    // testLock();
+    testLock();
     return 0;
 }
