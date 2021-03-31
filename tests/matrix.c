@@ -122,9 +122,9 @@ int main(){
     thread threads[3];
     for(int i = 0; i < 3; i++){
         thread_create(&threads[i], NULL, partMatMul, &args[i], 0);
-		thread_join(threads[i], NULL);
     }
     for(int i = 0; i < 3; i++){
+		thread_join(threads[i], NULL);
     }
     printf("%d %d\n", r1, c2);
     for(int i = 0; i < r1; i++){

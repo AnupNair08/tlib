@@ -152,10 +152,17 @@ int addThread(tcbQueue *t, tcb *thread_tcb){
 
 tcb* getNextThread(tcbQueue *t){
     if(t->front){
-        log_trace("%x",t->front);
+        // log_trace("%ld",getpid());
         tcb *temp = t->front->tcbnode;
         qnode *tobedelted = t->front;
+        if(temp->tid > getpid() * 4){
+            log_error("Race occured");
+            t->front = tobedelted->next;
+            free(tobedelted);
+            return NULL;
+        }
         t->front = tobedelted->next;
+        if(t->front == NULL) t->back = NULL;
         t->len--;
         free(tobedelted);
         return temp;
