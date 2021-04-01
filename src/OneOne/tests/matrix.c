@@ -3,16 +3,16 @@
 #ifdef BUILD
     #include<tlib.h>
 #else
-    #include "thread.h"
+    #include "../thread.h"
 #endif
 #include "tests.h"
-#include "attributetypes.h"
+#include "../attributetypes.h"
 #include <signal.h>
 #include <setjmp.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
-#include "log.h"
+#include "../log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -121,7 +121,7 @@ int main(){
     }
     thread threads[3];
     for(int i = 0; i < 3; i++){
-        thread_create(&threads[i], NULL, partMatMul, &args[i], 0);
+        thread_create(&threads[i], NULL, partMatMul, &args[i]);
     }
     for(int i = 0; i < 3; i++){
 		thread_join(threads[i], NULL);

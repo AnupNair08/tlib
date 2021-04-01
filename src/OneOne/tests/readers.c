@@ -3,16 +3,16 @@
 #ifdef BUILD
     #include<tlib.h>
 #else
-    #include "thread.h"
+    #include "../thread.h"
 #endif
 #include "tests.h"
-#include "attributetypes.h"
+#include "../attributetypes.h"
 #include <signal.h>
 #include <setjmp.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
-#include "log.h"
+#include "../log.h"
 thread tid;
 thread writerthreads[100],readerthreads[100];
 mut_t x,y;
@@ -59,8 +59,8 @@ int main()
     spin_init(&y);
     for(i=0;i<n2;i++)
     {
-        thread_create(&writerthreads[i],NULL,reader,NULL,0);
-        thread_create(&readerthreads[i],NULL,writer,NULL,0);
+        thread_create(&writerthreads[i],NULL,reader,NULL);
+        thread_create(&readerthreads[i],NULL,writer,NULL);
     }
     for(i=0;i<n2;i++)
     {

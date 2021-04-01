@@ -10,7 +10,7 @@
 typedef unsigned long thread;
 typedef struct funcargs{
     void (*f)(void *);
-    void *arg;
+    void* arg;
 } funcargs;
 
 int createManyOne(thread *, void *, void *, void *);

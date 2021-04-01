@@ -3,11 +3,11 @@
 #ifdef BUILD
     #include<tlib.h>
 #else
-    #include "thread.h"
+    #include "../thread.h"
 #endif
 #include "tests.h"
-#include "attributetypes.h"
-#include "log.h"
+#include "../attributetypes.h"
+#include "../log.h"
 #define WITH_LOCKS 1
 #define WITHOUT_LOCKS 0
 
@@ -43,8 +43,8 @@ void testLocks(int type){
         spin_init(&lock);
         temp = &lock;
     } 
-    thread_create(&t1,NULL,routine1, (void *)temp,0);
-    thread_create(&t2,NULL,routine2, (void *)temp,0);
+    thread_create(&t1,NULL,routine1, (void *)temp);
+    thread_create(&t2,NULL,routine2, (void *)temp);
     thread_join(t1,NULL);
     thread_join(t2,NULL);
 

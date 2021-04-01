@@ -52,29 +52,6 @@ static void init(){
 }
 
 /**
- * @brief Umbrella function which calls specific thread function
- * 
- * @param t Reference to the thread 
- * @param routine Function associated with the thread
- * @param attr Thread attributes
- * @param arg Arguments to the routine
- * @param threadMode Mapping model to be used (0 = One One , 1 = Many One, 2 = Many Many)
- * @return thread 
- */
-int thread_create(thread *t,void *attr,void * routine,void *arg, int threadMode){
-    switch(threadMode){
-        case 0:
-            return createOneOne(t, attr,routine, arg);
-        case 1:
-            signal(SIGALRM,SIG_IGN);
-            return createManyOne(t, attr,routine, arg);
-        case 2:
-            return createManyMany(t, attr,routine, arg);
-    }
-}
-
-
-/**
  * @brief Function to allocate a stack to One One threads
  * 
  * @param size Size of stack excluding the guard size
@@ -121,7 +98,7 @@ static void* allocStack(size_t size, size_t guard){
  * @param arg Arguments to the routine
  * @return thread 
  */
-int createOneOne(thread *t,void *attr,void * routine, void *arg){
+int thread_create(thread *t,void *attr,void * routine, void *arg){
     static int initState = 0;
     // spin_acquire(&globalLock);
     fflush(stdout);
@@ -252,10 +229,4 @@ void thread_exit(void *ret){
     singlyLLDelete(&tidList, gettid());
     kill(SIGINT,gettid());
     return;
-}
-
-//Handles ManyMany thread creation
-int createManyMany(thread *t, void *attr,void * routine, void *arg){
-    /*ManyMany Code*/
-    return 0;
 }
