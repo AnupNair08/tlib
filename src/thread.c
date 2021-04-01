@@ -122,7 +122,6 @@ static void* allocStack(size_t size, size_t guard){
  */
 int createOneOne(thread *t,void *attr,void * routine, void *arg){
     static int initState = 0;
-    // spin_acquire(&globalLock);
     fflush(stdout);
     thread tid;
     void *thread_stack;
@@ -131,10 +130,11 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
         initState = 1;
         init();
     }
+    spin_acquire(&globalLock);
     node * insertedNode = singlyLLInsert(&tidList, 0);
+    spin_release(&globalLock);
     if(insertedNode == NULL){
         log_error("Thread address not found");
-        // spin_release(&globalLock);
         return -1;
     }
     if(attr){
@@ -142,7 +142,6 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
         thread_stack = attr_t->stack == NULL ? allocStack(attr_t->stackSize, attr_t->guardSize) : attr_t->stack ;
         if(!thread_stack) {
             perror("tlib create");
-            // spin_release(&globalLock);
             return errno;
         }
         tid = clone(routine,
@@ -152,13 +151,14 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
                     &(insertedNode->tid),
                     NULL, 
                     &(insertedNode->tid));
+        spin_acquire(&globalLock);
         insertedNode->tidCpy = tid;
+        spin_release(&globalLock);
     }
     else{
         thread_stack = allocStack(STACK_SZ,GUARD_SZ);
         if(!thread_stack) {
             perror("tlib create");
-            // spin_release(&globalLock);
             return errno;
         }
         tid = clone(routine,
@@ -168,16 +168,16 @@ int createOneOne(thread *t,void *attr,void * routine, void *arg){
                     &(insertedNode->tid),
                     NULL, 
                     &(insertedNode->tid));
+        spin_acquire(&globalLock);
         insertedNode->tidCpy = tid;
+        spin_release(&globalLock);
     }
     if(tid == -1){
         perror("tlib create");
         free(thread_stack);
-        // spin_release(&globalLock);
         return errno;
     }
     *t = tid;
-    // spin_release(&globalLock);
     return 0;
 }
 
