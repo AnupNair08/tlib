@@ -38,3 +38,6 @@ typedef struct tcbQueue {
 int addThread(tcbQueue *, tcb *);
 tcb* getNextThread(tcbQueue *);
 void printAllNodes(singlyLL *);
+tcb* getThread(tcbQueue *, thread);
+void printAllmo(tcbQueue *);
+void queueRunning(tcbQueue *);

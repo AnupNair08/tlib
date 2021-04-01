@@ -66,6 +66,7 @@ int thread_create(thread *t,void *attr,void * routine,void *arg, int threadMode)
         case 0:
             return createOneOne(t, attr,routine, arg);
         case 1:
+            signal(SIGALRM,SIG_IGN);
             return createManyOne(t, attr,routine, arg);
         case 2:
             return createManyMany(t, attr,routine, arg);

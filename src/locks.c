@@ -29,7 +29,9 @@ int mutex_acquire(mut_t *lock){
     int lockstatus = atomic_flag_test_and_set(lock);
     if(lockstatus != 0){
         log_trace("Waiting for lock");
-        syscall(SYS_futex , lock, FUTEX_WAIT, 1, NULL, NULL, 0);
+        while(lock!=0){
+            syscall(SYS_futex , lock, FUTEX_WAIT, 1, NULL, NULL, 0);
+        }
     }
     else{
         log_trace("Lock acquired");
