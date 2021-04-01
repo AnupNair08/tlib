@@ -22,5 +22,10 @@ typedef struct tcb {
     void *stack;
     size_t stack_sz;
     int thread_state;
-    ucontext_t context;
+    ucontext_t* context;
+    //indicate if the process has exited or not
+    int exited;
+    //list of all waiters on this process
+    int* waiters;
+    int numWaiters;
 } tcb;

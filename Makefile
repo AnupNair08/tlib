@@ -31,14 +31,13 @@ alltest: $(TESTS) $(SRC)
 	$(CC) lockTests.o $(OBJ) -o lockTests
 	$(CC) matrix.o $(OBJ) -o matrix 
 	$(CC) readers.o $(OBJ) -o readers
-	$(CC) manyTests.o $(OBJ) -o manyTests
-
+	$(CC) -g manyTests.o $(OBJ) -o manyTests
 
 	@mv *.o unitTests lockTests matrix readers manyTests $(BIN)
 	
 	
 clean:
-	@rm $(BIN)*.o 
+	@rm $(BIN)*.o
 
 docs:
 	doxygen doxyconfig

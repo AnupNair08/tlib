@@ -11,6 +11,8 @@
 
 #define TGKILL 234
 
+//One-One data structure interface
+
 int singlyLLInit(singlyLL *ll){
     ll->head = ll->tail = NULL;
     return 0;
@@ -130,7 +132,7 @@ void printAllNodes(singlyLL *l){
     return;
 }
 
-
+//Many-One data structure interface
 
 int addThread(tcbQueue *t, tcb *thread_tcb){
     qnode *temp = (qnode *)malloc(sizeof(qnode));
@@ -151,21 +153,91 @@ int addThread(tcbQueue *t, tcb *thread_tcb){
 }
 
 tcb* getNextThread(tcbQueue *t){
-    if(t->front){
         // log_trace("%ld",getpid());
-        tcb *temp = t->front->tcbnode;
-        qnode *tobedelted = t->front;
-        if(temp->tid > getpid() * 4){
-            log_error("Race occured");
-            t->front = tobedelted->next;
-            free(tobedelted);
+    qnode *temp = t->front;
+    if(temp == NULL){
+        return NULL;
+    }
+    if(temp->next == NULL){
+        if(temp->tcbnode->thread_state == RUNNABLE){
+            return temp->tcbnode;
+        }
+        else{
             return NULL;
         }
-        t->front = tobedelted->next;
-        if(t->front == NULL) t->back = NULL;
-        t->len--;
-        free(tobedelted);
-        return temp;
+    }
+    if(temp->tcbnode->thread_state == RUNNABLE){
+        struct tcb* retTcb =  temp->tcbnode;
+        t->front = t->front->next;
+        addThread(t, retTcb);
+        free(temp);
+        return retTcb;
+    }
+    while(temp->next){
+        struct qnode* delNode =  temp->next;
+        if(delNode->tcbnode->thread_state == RUNNABLE){
+            temp->next = delNode->next;
+            struct tcb* retTcb = delNode->tcbnode;
+            if(delNode == t->back){
+                t->back = temp;
+            }
+            addThread(t, retTcb);
+            free(delNode);
+            return retTcb;
+        }
+        temp = temp->next;
     }
     return NULL;
+}
+
+tcb* getThread(tcbQueue *t, thread tid){
+    if(t->front){
+        qnode *temp = t->front;
+        while(temp!=NULL){
+            if(temp->tcbnode->tid == tid){
+                return temp->tcbnode;
+            }
+            temp = temp->next;
+        }
+    }
+    return NULL;
+}
+
+void printAllmo(tcbQueue *t){
+    qnode *q = t->front;
+    while(q!=NULL){
+        printf("%d, %d -> ", q->tcbnode->tid, q->tcbnode->thread_state);
+        q = q->next;
+    }
+    printf("\n");
+    return;
+}
+
+void queueRunning(tcbQueue *t){
+    qnode *temp = t->front;
+    if(temp == NULL){
+        return;
+    }
+    if(temp->tcbnode->thread_state == RUNNING){
+        struct tcb* retTcb =  temp->tcbnode;
+        t->front = t->front->next;
+        addThread(t, retTcb);
+        free(temp);
+        return;
+    }
+    while(temp->next){
+        struct qnode* delNode =  temp->next;
+        if(delNode->tcbnode->thread_state == RUNNING){
+            temp->next = delNode->next;
+            struct tcb* retTcb = delNode->tcbnode;
+            if(delNode == t->back){
+                t->back = temp;
+            }
+            addThread(t, retTcb);
+            free(delNode);
+            break;
+        }
+        temp = temp->next;
+    }
+    return;
 }
