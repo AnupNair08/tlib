@@ -32,8 +32,9 @@ alltest: $(TESTS) $(SRC)
 	$(CC) matrix.o $(OBJ) -o matrix 
 	$(CC) readers.o $(OBJ) -o readers
 	$(CC) -g manyTests.o $(OBJ) -o manyTests
+	$(CC) -g benchmark.o $(OBJ) -o benchmark
 
-	@mv *.o unitTests lockTests matrix readers manyTests $(BIN)
+	@mv *.o unitTests lockTests matrix readers manyTests benchmark $(BIN)
 	
 	
 clean:

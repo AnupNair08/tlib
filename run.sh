@@ -12,15 +12,27 @@
 # ./bin/lockTests
 
 # echo "======================================"
-# echo -e "Running Matrix Multiplication Test\n"
+# echo -e "Running Readers Writers Problem Test\n"
 # echo "======================================"
-# echo -e "Testing 8x8 multiplication\n"
-# cat tests/data.txt | ./bin/matrix
+# ./bin/readers
 
 echo "======================================"
-echo -e "Running Readers Writers Problem Test\n"
+echo -e "Running single threaded matrix multiplication"
+tests=(10 100 200 500 800 1000)
+for i in "${tests[@]}"
+do
+   echo -n "Input size $i x $i => " && { time python3 tests/script.py $i | ./bin/matrix single > /dev/null; } |& grep user  
+done
 echo "======================================"
-./bin/readers
+
+echo "======================================"
+echo -e "Running multi threaded matrix multiplication"
+tests=(10 100 200 500 800 1000)
+for i in "${tests[@]}"
+do
+   echo -n "Input size $i x $i => " && { time python3 tests/script.py $i | ./bin/matrix multi > /dev/null; } |& grep user  
+done
+echo "======================================"
 
 
 # echo "======================================"
