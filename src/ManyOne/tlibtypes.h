@@ -29,3 +29,12 @@ typedef struct tcb {
     int* waiters;
     int numWaiters;
 } tcb;
+
+void wrapRoutine(void *);
+static void* allocStack(size_t , size_t );
+static void starttimer();
+static void enabletimer();
+static void disabletimer();
+static void switchToScheduler();
+static void scheduler();
+static void initManyOne();

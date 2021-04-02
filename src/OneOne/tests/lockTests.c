@@ -82,8 +82,8 @@ int testMutex(){
     log_info("Starting test with Mutex");
     mutex_init(&lock);
     thread t1,t2;
-    thread_create(&t1,NULL,f1,(void *)&lock,0);
-    thread_create(&t2,NULL,f2,(void *)&lock,0);
+    thread_create(&t1,NULL,f1,(void *)&lock);
+    thread_create(&t2,NULL,f2,(void *)&lock);
     sleep(2);
     run = 0;
     log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n",c1+c2,c);
@@ -116,13 +116,13 @@ int testSpin(){
     log_info("Starting test with Spinlocks");
     spin_init(&lock);
     thread t1,t2;
-    thread_create(&t1,NULL,f1,(void *)&lock,0);
-    thread_create(&t2,NULL,f2,(void *)&lock,0);
+    thread_create(&t1,NULL,f1,(void *)&lock);
+    thread_create(&t2,NULL,f2,(void *)&lock);
     sleep(2);
     run = 0;
     log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n",c1+c2,c);
     if(c1 + c2 - c > 2) printf(RED"Test failed\n"RESET);
-    else printf(GREEN"Test passed"RESET);
+    else printf(GREEN"Test passed\n"RESET);
     return 0;
 }
 

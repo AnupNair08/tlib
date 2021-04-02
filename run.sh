@@ -1,41 +1,45 @@
 #! /bin/bash
 
-# echo "======================================"
-# echo -e "Running Unit Tests\n"
-# echo "======================================"
+OneOneTest=./bin/OneOne
+ManyOneTest=./bin/ManyOne
 
-# ./bin/unitTests
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+echo -e "\nRunning Unit Tests\n"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 
-# echo "======================================"
-# echo -e "Running Lock Tests\n"
-# echo "======================================"
-# ./bin/lockTests
+${OneOneTest}/unitTests
 
-# echo "======================================"
-# echo -e "Running Readers Writers Problem Test\n"
-# echo "======================================"
-# ./bin/readers
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+echo -e "\nRunning Lock Tests\n"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+${OneOneTest}/lockTests
 
-echo "======================================"
-echo -e "Running single threaded matrix multiplication"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+echo -e "\nRunning Readers Writers Problem Test\n"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+echo 2 | ${OneOneTest}/readers 
+
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+echo -e "\nRunning single threaded matrix multiplication"
 tests=(10 100 200 500 800 1000)
 for i in "${tests[@]}"
 do
-   echo -n "Input size $i x $i => " && { time python3 tests/script.py $i | ./bin/matrix single > /dev/null; } |& grep user  
+   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${OneOneTest}/matrix single > /dev/null; } |& grep user  
 done
-echo "======================================"
+# echo "======================================"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 
-echo "======================================"
-echo -e "Running multi threaded matrix multiplication"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+echo -e "\nRunning multi threaded matrix multiplication"
 tests=(10 100 200 500 800 1000)
 for i in "${tests[@]}"
 do
-   echo -n "Input size $i x $i => " && { time python3 tests/script.py $i | ./bin/matrix multi > /dev/null; } |& grep user  
+   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${OneOneTest}/matrix multi > /dev/null; } |& grep user  
 done
-echo "======================================"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 
 
-# echo "======================================"
-# echo -e "Running Many One Test\n"
-# echo "======================================"
-# ./bin/manyTests
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+echo -e "\nRunning Many One Test\n"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+${ManyOneTest}/manyTests

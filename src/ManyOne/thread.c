@@ -32,11 +32,11 @@
 tcb* __curproc = NULL;
 tcb* __mainproc = NULL;
 tcb* __scheduler = NULL;
-unsigned long int __nextpid;
 tcbQueue __allThreads;
+mut_t globallock;
+unsigned long int __nextpid;
 int* exited = NULL;
 int numExited = 0;
-mut_t globallock;
 
 static void* allocStack(size_t size, size_t guard){    
     void *stack = NULL;  
@@ -48,7 +48,7 @@ static void* allocStack(size_t size, size_t guard){
     return stack;
 }
 
-void starttimer(){
+static void starttimer(){
     struct itimerval it_val;
     it_val.it_interval.tv_sec = 2;
     it_val.it_interval.tv_usec = 0;
@@ -58,22 +58,34 @@ void starttimer(){
         perror("setitimer");
         exit(1);
     }
+    return;
 }
 
-void enabletimer(){
-    signal(SIGALRM, switchToScheduler);
+static void enabletimer(){
+    if(signal(SIGALRM, switchToScheduler) == SIG_ERR){
+        perror("Timer ");
+        exit(EXIT_FAILURE); 
+    };
+    return;
 }
 
-void disabletimer(){
-    signal(SIGALRM,SIG_IGN);
+static void disabletimer(){
+    if(signal(SIGALRM,SIG_IGN) == SIG_ERR){
+        perror("Timer ");
+        exit(EXIT_FAILURE);
+    };
+    return;
 }
 
-void switchToScheduler(){
-    swapcontext(__curproc->context, __scheduler->context);
+static void switchToScheduler(){
+    if(swapcontext(__curproc->context, __scheduler->context) == -1){
+        perror("Context switch: ");
+        exit(EXIT_FAILURE); 
+    }
     enabletimer();
 }
 
-void scheduler(){
+static void scheduler(){
     disabletimer();
     int flag = 0;
     // log_info("Call to scheduler (interrupted tid %d)", __curproc->tid);
@@ -108,11 +120,14 @@ void scheduler(){
     if(__prev->thread_state != WAITING){
         __prev->thread_state = RUNNABLE;
     }
-    setcontext(next->context);
+    if(setcontext(next->context) == -1){
+        perror("Context Switch: ");
+        exit(EXIT_FAILURE);
+    }
 }
 
 
-void initManyOne(){
+static void initManyOne(){
     
     log_info("Library initialized");
     spin_init(&globallock);
@@ -210,11 +225,13 @@ int thread_join(thread t, void **retLocation){
     tcb* waitedThread = getThread(&__allThreads, t);
     if(waitedThread == NULL){
         spin_release(&globallock);
+        if(retLocation) *retLocation = (void *)ESRCH;
         return ESRCH;
     }
     // check if not joinable, check if another thread is waiting (or not?)
     if(waitedThread->exited){
         spin_release(&globallock);
+        if(retLocation) *retLocation = (void *)0;
         return 0;
     }
     //Add thread to the list of waiters
@@ -223,5 +240,6 @@ int thread_join(thread t, void **retLocation){
     __curproc->thread_state = WAITING;
     spin_release(&globallock);
     switchToScheduler();
+    if(retLocation) *retLocation = (void *)0;
     return 0;
 }

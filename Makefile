@@ -1,17 +1,18 @@
 CC := gcc
 CFLAGS := -g -DLOG_USE_COLOR 
-SUBDIRS := doxygen src/ManyOne/bin src/OneOne/bin
+SUBDIRS := doxygen bin bin/ManyOne bin/OneOne
 SRCMANYONE := src/ManyOne/*.c
 SRCONEONE := src/OneOne/*.c
 OBJMANYONE := thread.o tattr.o dataStructs.o locks.o log.o
 OBJONEONE := thread.o tattr.o dataStructs.o locks.o log.o
 TESTSMANYONE := src/ManyOne/tests/*.c
 TESTSONEONE := src/OneOne/tests/*.c
-BINMANYONE := src/ManyOne/bin/
-BINONEONE := src/OneOne/bin/
+BINMANYONE := bin/ManyOne/
+BINONEONE := bin/OneOne/
 
-.PHONY: init clean alltest tlib
+.PHONY: init clean alltest tlib docs
 
+# Make initliazes all the needed directories for the project
 init:
 	@for dir in $(SUBDIRS); \
 		do \
