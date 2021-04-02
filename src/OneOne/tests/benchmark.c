@@ -3,7 +3,7 @@
 #ifdef BUILD
     #include<tlib.h>
 #else
-    #include "thread.h"
+    #include "../thread.h"
 #endif
 #include <signal.h>
 #include <setjmp.h>
@@ -14,9 +14,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
-#include "attributetypes.h"
+#include "../attributetypes.h"
 #include "tests.h"
-#include "log.h"
+#include "../log.h"
 #define SZ 1000000
 #define printarr \
     for(short it = 0 ; it < SZ; it++) \

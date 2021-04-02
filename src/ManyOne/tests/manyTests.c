@@ -13,7 +13,7 @@
 void func(void *i){
     printf("In thread %d\n", *(int*)i);
     fflush(stdout);
-    // sleep(*(int *)i);
+    sleep(*(int *)i);
     return;
 }
 
