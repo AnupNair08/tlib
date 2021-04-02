@@ -69,8 +69,11 @@ Note that the attributes object should be initialized before use and should be p
 ## Thread Exit
 
 ## Locking Mechanisms
-1. Mutex
-2. Spinlocks
+1. <b>Mutex</b>
+	Threads which try to access a critical section are made to acquire a lock in their entry sections. Mutex lock once acquired by a thread leave all other threads trying to acquire the same lock in a sleeping state. This ensures that only one thread has a lock when the critical section is being accessed. Further, once the thread is done with the lock, it releases the lock and all the waiting threads are woken up. The threads then contest for the locks once again. This sleep wait mechanism has been implemented with the help of `futex` system call and guarantees that operations for waiting on a lock are atomic in nature.
+
+2. <b>Spinlocks</b>
+	Spinlocks are locking mechansims wherein the waiting threads do not sleep, instead they do a busy waiting for the lock, trying to see if the lock is available in successive CPU cycles. The entry section of the code checks if the lock is already acquired by some other thread and if it is then the thread goes in a busy wait loop. Once the lock has been released, the thread can then acquire the lock during one of its cycles.
 
 ## Signal Handling
 

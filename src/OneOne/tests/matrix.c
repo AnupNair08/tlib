@@ -5,8 +5,6 @@
 #else
     #include "../thread.h"
 #endif
-#include "tests.h"
-#include "../attributetypes.h"
 #include <signal.h>
 #include <setjmp.h>
 #include <unistd.h>
@@ -16,6 +14,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
+#include "../attributetypes.h"
+#include "tests.h"
 typedef struct arg_struct{
     int rowFrom;
     int rowTo;
@@ -68,7 +69,23 @@ void* partMatMul(void* argsStruct){
     }
     return NULL;
 }
-int main(){
+
+
+
+void multiplySingle(int **mat1, int **mat2, int **res, int a, int b, int c)
+{
+    int i, j, k;
+    for (i = 0; i < a; i++) {
+        for (j = 0; j < c; j++) {
+            res[i][j] = 0;
+            for (k = 0; k < b; k++)
+                res[i][j] += mat1[i][k] * mat2[k][j];
+        }
+    }
+}
+
+
+int main(int argc, char *argv[]){
     int r1, r2, c1, c2, **res;
     int **arr1=NULL, **arr2=NULL;
     scanf("%d", &r1);
@@ -97,53 +114,59 @@ int main(){
             return errno;
         }
     }
-    struct arg_struct args[3];
-    int row_parts = r1/3;
-    for(int i = 0; i < 3; i++){
-        args[i].rowFrom = -1;
-        args[i].rowTo = -1;
-        args[i].res = res;
-        args[i].arr1 = arr1;
-        args[i].arr2 = arr2;
-        args[i].numCols1 = c1;
-        args[i].numCols2 = c2;
-    }   
-    args[0].rowFrom = 0;
-    for(int i = 0; i < 3; i++){
-        args[i].rowTo = row_parts-1;
-    }
-    for(int i = 0; i < r1%3; i++){
-        args[i].rowTo += 1;
-    }
-    for(int i = 1; i <= 2; i++){
-        args[i].rowFrom = args[i-1].rowTo + 1;
-        args[i].rowTo += args[i].rowFrom;
-    }
-    thread threads[3];
-    for(int i = 0; i < 3; i++){
-        thread_create(&threads[i], NULL, partMatMul, &args[i]);
-    }
-    for(int i = 0; i < 3; i++){
-		thread_join(threads[i], NULL);
-    }
-    printf("%d %d\n", r1, c2);
-    for(int i = 0; i < r1; i++){
-        for(int j = 0; j < c2; j++){
-            printf("%d ", res[i][j]);
+    if(strcmp(argv[1],"multi") == 0){
+
+        struct arg_struct args[3];
+        int row_parts = r1/3;
+        for(int i = 0; i < 3; i++){
+            args[i].rowFrom = -1;
+            args[i].rowTo = -1;
+            args[i].res = res;
+            args[i].arr1 = arr1;
+            args[i].arr2 = arr2;
+            args[i].numCols1 = c1;
+            args[i].numCols2 = c2;
+        }   
+        args[0].rowFrom = 0;
+        for(int i = 0; i < 3; i++){
+            args[i].rowTo = row_parts-1;
         }
-        printf("\n");
+        for(int i = 0; i < r1%3; i++){
+            args[i].rowTo += 1;
+        }
+        for(int i = 1; i <= 2; i++){
+            args[i].rowFrom = args[i-1].rowTo + 1;
+            args[i].rowTo += args[i].rowFrom;
+        }
+        thread threads[3];
+        for(int i = 0; i < 3; i++){
+            thread_create(&threads[i], NULL, partMatMul, &args[i]);
+        }
+        for(int i = 0; i < 3; i++){
+            thread_join(threads[i], NULL);
+        }
+        // printf("%d %d\n", r1, c2);
+        // for(int i = 0; i < r1; i++){
+        //     for(int j = 0; j < c2; j++){
+        //         printf("%d ", res[i][j]);
+        //     }
+        //     printf("\n");
+        // }
+        for(int i = 0; i < r1; i++){
+            free(res[i]);
+        }
+        free(res);
+        for(int i = 0; i < r1; i++){
+            free(arr1[i]);
+        }
+        free(arr1);
+        for(int i = 0; i < r2; i++){
+            free(arr2[i]);
+        }
+        free(arr2);
     }
-    for(int i = 0; i < r1; i++){
-        free(res[i]);
+    else{
+        multiplySingle(arr1,arr2,res,r1,r2,c2);
     }
-    free(res);
-    for(int i = 0; i < r1; i++){
-        free(arr1[i]);
-    }
-    free(arr1);
-    for(int i = 0; i < r2; i++){
-        free(arr2[i]);
-    }
-    free(arr2);
     return 0;
 }
