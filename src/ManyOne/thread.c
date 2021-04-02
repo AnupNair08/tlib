@@ -172,9 +172,17 @@ void wrapRoutine(void *fa){
     // __curproc = __mainproc;
     // __mainproc->thread_state = RUNNING;
     enabletimer();
-    // while(1){}
-    while(__mainproc->thread_state != RUNNABLE){}
-    __mainproc->thread_state = RUNNING;
+    int flag = 0;
+    for(int i = 0; i < __curproc->numWaiters; i++){
+        if(__curproc->waiters[__curproc->numWaiters] == __mainproc->tid){
+            __mainproc->thread_state = RUNNING;
+            flag = 1;
+            break;
+        }
+    }
+    if(flag == 0){
+        switchToScheduler();
+    }
 }
 
 int thread_create(thread *t, void *attr, void *routine, void *arg){
