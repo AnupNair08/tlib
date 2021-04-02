@@ -5,3 +5,4 @@ typedef unsigned long int thread;
 typedef volatile atomic_flag mut_t;
 int thread_create(thread *, void *, void *, void *);
 int thread_join(thread , void **);
+int thread_kill(pid_t, int);

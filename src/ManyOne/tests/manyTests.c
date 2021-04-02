@@ -22,10 +22,18 @@ int main(){
     thread t[4];
     for(int i = 0; i < 4; i++){
         thread_create(&t[i],NULL,func,(void *)&j[i]);
+        log_trace("Thread %ld created",t[i]);
     }
+    log_trace("Sending signal to thread %ld",t[2]);
+    thread_kill(t[2],SIGTERM);
+    log_trace("Sending signal to thread %ld",t[3]);
+    thread_kill(t[3],SIGTERM);
+
     for(int i = 0; i < 4; i++){
         thread_join(t[i], NULL);
     }
+    log_trace("Sending process wide signal");
+    thread_kill(getpid(),SIGINT);
     log_info("Main exiting");
     return 0;
 }

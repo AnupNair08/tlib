@@ -28,6 +28,9 @@ typedef struct tcb {
     //list of all waiters on this process
     int* waiters;
     int numWaiters;
+    // Implement as a queue for easy deletion
+    int* pendingSig;
+    int numPendingSig;
 } tcb;
 
 void wrapRoutine(void *);

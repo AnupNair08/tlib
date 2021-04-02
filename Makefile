@@ -35,7 +35,8 @@ tlib: $(SRCONEONE) $(SRCMANYONE)
 alltest: $(TESTSMANYONE) $(TESTSONEONE) $(SRCMANYONE) $(SRCONEONE)
 	$(CC) $(CFLAGS) -c $(TESTSMANYONE) $(SRCMANYONE) 
 	$(CC) -g manyTests.o $(OBJMANYONE) -o manyTests
-	@mv *.o manyTests $(BINMANYONE)
+	$(CC) matrix.o $(OBJONEONE) -o matrix 
+	@mv *.o manyTests matrix $(BINMANYONE)
 	$(CC) $(CFLAGS) -c $(TESTSONEONE) $(SRCONEONE) 
 	$(CC) unitTests.o $(OBJONEONE) -o unitTests
 	$(CC) lockTests.o $(OBJONEONE) -o lockTests

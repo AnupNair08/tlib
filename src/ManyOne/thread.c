@@ -28,12 +28,14 @@
 #include "dataStructTypes.h"
 #include "log.h"
 #include "thread.h"
+#include "sighandler.h"
 
 tcb* __curproc = NULL;
 tcb* __mainproc = NULL;
 tcb* __scheduler = NULL;
 tcbQueue __allThreads;
 mut_t globallock;
+sigset_t __signalList;
 unsigned long int __nextpid;
 int* exited = NULL;
 int numExited = 0;
@@ -48,6 +50,13 @@ static void* allocStack(size_t size, size_t guard){
     return stack;
 }
 
+static void setSignals(){
+    sigfillset(&__signalList);
+    sigdelset(&__signalList,SIGINT);
+    sigdelset(&__signalList,SIGSTOP);
+    sigdelset(&__signalList,SIGCONT);
+    sigprocmask(SIG_BLOCK,&__signalList,NULL);
+}
 static void starttimer(){
     struct itimerval it_val;
     it_val.it_interval.tv_sec = 2;
@@ -108,11 +117,26 @@ static void scheduler(){
         numExited = 0;
         exited = NULL;
     }
+
     spin_acquire(&globallock);
+    setSignals();
     queueRunning(&__allThreads);
     tcb *next = getNextThread(&__allThreads);
     spin_release(&globallock);
+
     if(!next) return;
+    int k = next->numPendingSig;
+    sigset_t mask;
+    for(int i = 0 ;i < k;i++) {
+        // log_trace("Signal %d pending for %ld",next->pendingSig[i],next->tid);
+        spin_acquire(&globallock);
+        sigaddset(&mask,next->pendingSig[i]);
+        sigprocmask(SIG_UNBLOCK,&mask,NULL);
+        spin_release(&globallock);
+        // Remove from the pending list
+        next->numPendingSig -= 1;
+        raise(next->pendingSig[i]);
+    }
     // Set new thread as running and current thread as runnable
     next->thread_state = RUNNING;
     tcb* __prev = __curproc;
@@ -131,7 +155,7 @@ static void initManyOne(){
     
     log_info("Library initialized");
     spin_init(&globallock);
-    
+    setSignals();    
     __mainproc = (tcb*)malloc(sizeof(tcb));
     __mainproc->thread_state = RUNNING;
     __mainproc->tid = getpid();
@@ -162,7 +186,12 @@ static void initManyOne(){
     starttimer();
 }
 
+void handlecustom(){
+    log_trace("Signal Handled in the Thread");
+}
+
 void wrapRoutine(void *fa){
+    WRAP_SIGNALS;
     funcargs *temp = (funcargs *)fa;
     enabletimer();
     (temp->f)(temp->arg);
@@ -204,14 +233,29 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
     //for handling join
     temp->exited = 0;
     temp->waiters = NULL;
+    temp->pendingSig = NULL;
+    temp->numPendingSig = 0;
     temp->numWaiters = 0;
     funcargs* fa = (funcargs*)malloc(sizeof(funcargs));
     fa->f = routine;
     fa->arg = arg;
     // Context of thread is modified to accepts timer interrupts
     getcontext(thread_context);
-    thread_context->uc_stack.ss_sp = allocStack(STACK_SZ,0);
-    thread_context->uc_stack.ss_size = STACK_SZ;
+    if(attr){
+        if(((thread_attr *)attr)->stack){
+            thread_context->uc_stack.ss_sp = ((thread_attr *)attr)->stack;
+            thread_context->uc_stack.ss_size = ((thread_attr *)attr)->stackSize;
+        }
+        else if(((thread_attr *)attr)->stackSize){
+            thread_context->uc_stack.ss_sp = allocStack(((thread_attr *)attr)->stackSize,0);
+            thread_context->uc_stack.ss_size = ((thread_attr *)attr)->stackSize;
+        }
+    }
+    else{
+        // thread_context->uc_stack.ss_sp = attr != NULL ? allocStack(STACK_SZ,0) : allocStack(((thread_attr *)attr)->stackSize,0);
+        thread_context->uc_stack.ss_sp = allocStack(STACK_SZ,0);
+        thread_context->uc_stack.ss_size = STACK_SZ;
+    }
     thread_context->uc_link = __mainproc->context;
     makecontext(thread_context,(void*)&wrapRoutine,1,(void *)(fa));
     temp->context = thread_context;
@@ -250,4 +294,23 @@ int thread_join(thread t, void **retLocation){
     switchToScheduler();
     if(retLocation) *retLocation = (void *)0;
     return 0;
+}
+
+
+int thread_kill(pid_t t, int signum){
+    spin_acquire(&globallock);
+    if(signum == SIGINT || signum == SIGCONT || signum == SIGSTOP){
+        kill(getpid(),signum);
+    }
+    else{
+        if(__curproc->tid == t){
+            raise(signum);
+            spin_release(&globallock);
+            return 0;
+        }
+        tcb *temp = getThread(&__allThreads,t);
+        temp->pendingSig = (int *)realloc(temp->pendingSig, (++(temp->numPendingSig) * sizeof(int)));
+        temp->pendingSig[temp->numPendingSig - 1] = signum;
+    }
+    spin_release(&globallock);
 }
