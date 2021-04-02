@@ -49,8 +49,8 @@ void sum_list(long *arr){
     a2.low = SZ/2, a2.high = SZ;
     // printarr;
     thread t1, t2;
-    thread_create(&t1,NULL,compute,(void *)&a1,0);
-    thread_create(&t1,NULL,compute,(void *)&a2,0);
+    thread_create(&t1,NULL,compute,(void *)&a1);
+    thread_create(&t1,NULL,compute,(void *)&a2);
     thread_join(t1,NULL);
     thread_join(t2,NULL);
     log_info("Value of sum is %ld\n",sum);

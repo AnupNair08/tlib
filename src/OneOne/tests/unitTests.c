@@ -3,16 +3,16 @@
 #ifdef BUILD
     #include<tlib.h>
 #else
-    #include "thread.h"
+    #include "../thread.h"
 #endif
 #include "tests.h"
-#include "attributetypes.h"
+#include "../attributetypes.h"
 #include <signal.h>
 #include <setjmp.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
-#include "log.h"
+#include "../log.h"
 #define TEST_STSZ 8192
 #define TEST_GDSZ 2048
 #define gettid() syscall(SYS_gettid)
@@ -39,7 +39,7 @@ void testCreate(){
     printf("tlib creation test started...\n");
     thread t[10];
     for(int i = 0 ;i < 10; i++){
-        if(thread_create(&t[i],NULL,routine,(void *)&i,0) == 0){
+        if(thread_create(&t[i],NULL,routine,(void *)&i) == 0){
             log_info("Thread %d created successfully with id %ld",i,t[i]);
             s++;
         }
@@ -74,7 +74,7 @@ void testJoin(){
     puts("");
     log_trace("Joining threads upon creation in a sequential order");
     for(int i = 0 ;i < 5; i++){
-        if(thread_create(&t[i],NULL,routineJoin,(void *)&i,0) == 0){
+        if(thread_create(&t[i],NULL,routineJoin,(void *)&i) == 0){
             log_info("Thread %d created successfully with id %ld",i,t[i]);
             thread_join(t[i],NULL);
             s++;
@@ -87,7 +87,7 @@ void testJoin(){
     puts("");
     log_trace("Joining on threads after creation");
     for(int i = 0 ;i < 5; i++){
-        if(thread_create(&t[i],NULL,routineJoin,(void *)&i,0) == 0){
+        if(thread_create(&t[i],NULL,routineJoin,(void *)&i) == 0){
             log_info("Thread %d created successfully with id %ld",i,t[i]);
             s++;
         }
@@ -124,7 +124,7 @@ void testStack(){
         log_error("Attribute initialisation failed\n");
     }
     thread_attr_setStack(&attr,8);
-    thread_create(&t,&attr,routine,NULL,0);
+    thread_create(&t,&attr,routine,NULL);
     return;
 }
 
@@ -149,8 +149,8 @@ void testExit(){
     thread t,t2;
     mut_t lock;
     spin_init(&lock);
-    thread_create(&t,NULL,exitroutine1,(void *)&lock,0);
-    thread_create(&t2,NULL,exitroutine2,(void *)&lock,0);
+    thread_create(&t,NULL,exitroutine1,(void *)&lock);
+    thread_create(&t2,NULL,exitroutine2,(void *)&lock);
     thread_join(t,NULL);
     thread_join(t2,NULL);
     printf("Joining Complete\n");
@@ -190,14 +190,14 @@ void testSig(){
     int ret;
     if(setjmp(buffer1) == 0){
         thread t1;
-        thread_create(&t1,NULL,sigroutine,NULL,0);
+        thread_create(&t1,NULL,sigroutine,NULL);
         ret = thread_kill(t1, SIGSTOP);
         thread_join(t1,NULL);
     }
     else{
         // Send a process specific signal
         // thread t2;
-        // create(&t2,NULL,sigroutine1,NULL,0);
+        // create(&t2,NULL,sigroutine1,NULL);
         // ret = thread_kill(t2, SIGALRM);
         // thread_join(t2,NULL);
     } 
@@ -230,7 +230,7 @@ void testAttr(){
         printf(RED"Test failed"RESET);
         return;
     }
-    thread_create(&t1,&a,attrroutine,NULL,0);
+    thread_create(&t1,&a,attrroutine,NULL);
     thread_join(t1,NULL);
     thread_attr_destroy(&a);
     printf(GREEN"Test Passed\n"RESET);
@@ -248,8 +248,8 @@ void testLock(){
     thread t,g;
     mut_t lock;
     mutex_init(&lock);
-    thread_create(&t,NULL,lockroutine,(void *)&lock,0);
-    thread_create(&g,NULL,lockroutine,(void *)&lock,0);
+    thread_create(&t,NULL,lockroutine,(void *)&lock);
+    thread_create(&g,NULL,lockroutine,(void *)&lock);
     thread_join(t,NULL);
     thread_join(g,NULL);
 }

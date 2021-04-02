@@ -22,22 +22,3 @@ unsigned long int* returnCustomTidAddress(singlyLL*, unsigned long int);
 void persistTid(singlyLL *, unsigned long int);
 
 int killAllThreads(singlyLL*, int signum);
-
-
-typedef struct qnode {
-    tcb *tcbnode;
-    struct qnode *next;
-} qnode;
-
-typedef struct tcbQueue {
-    qnode *front;
-    qnode *back;
-    int len;
-} tcbQueue;
-
-int addThread(tcbQueue *, tcb *);
-tcb* getNextThread(tcbQueue *);
-void printAllNodes(singlyLL *);
-tcb* getThread(tcbQueue *, thread);
-void printAllmo(tcbQueue *);
-void queueRunning(tcbQueue *);

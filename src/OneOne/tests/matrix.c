@@ -3,20 +3,20 @@
 #ifdef BUILD
     #include<tlib.h>
 #else
-    #include "thread.h"
+    #include "../thread.h"
 #endif
 #include <signal.h>
 #include <setjmp.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include "../log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "attributetypes.h"
+#include "../attributetypes.h"
 #include "tests.h"
-#include "log.h"
 typedef struct arg_struct{
     int rowFrom;
     int rowTo;
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]){
         }
         thread threads[3];
         for(int i = 0; i < 3; i++){
-            thread_create(&threads[i], NULL, partMatMul, &args[i], 0);
+            thread_create(&threads[i], NULL, partMatMul, &args[i]);
         }
         for(int i = 0; i < 3; i++){
             thread_join(threads[i], NULL);
