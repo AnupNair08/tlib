@@ -6,7 +6,6 @@
     #include "../thread.h"
 #endif
 #include "tests.h"
-#include "../attributetypes.h"
 #include <signal.h>
 #include <setjmp.h>
 #include <unistd.h>

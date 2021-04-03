@@ -1,7 +1,7 @@
-#include <stdatomic.h>
 #include <sys/syscall.h>
+#include <unistd.h>
 #include <linux/futex.h>
-#include "thread.h"
+#include "locks.h"
 #include "log.h"
 
 /**

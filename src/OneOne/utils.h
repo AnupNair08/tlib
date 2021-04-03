@@ -1,3 +1,18 @@
+/**
+ * @file utils.h
+ * @author Hrishikesh Athalye & Anup Nair
+ * @brief Data structures definitions and APIs
+ * @version 0.1
+ * @date 2021-04-04
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
+
+/**
+ * @brief Node in the TCB of the thread
+ * 
+ */
 typedef struct node{
     unsigned long int tid;
     unsigned long int tidCpy;
@@ -5,17 +20,27 @@ typedef struct node{
     struct node* next;
 } node;
 
+/**
+ * @brief Singly Linked List of TCBs
+ * 
+ */
 typedef struct singlyLL{
     node *head;
     node *tail;
 } singlyLL;
 
-typedef unsigned long thread;
+/**
+ * @brief Arguments passed to the wrapper function
+ * 
+ */
 typedef struct funcargs{
     void (*f)(void *);
     void* arg;
     node* insertedNode;
+    void *stack;
 } funcargs;
+
+// Linked List related operations
 
 int singlyLLInit(singlyLL*);
 
@@ -31,4 +56,7 @@ void persistTid(singlyLL *, unsigned long int);
 
 int killAllThreads(singlyLL*, int signum);
 
-void* getReturnValue(singlyLL *, thread);
+void* getReturnValue(singlyLL *, unsigned long int);
+
+
+

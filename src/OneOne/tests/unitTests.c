@@ -6,8 +6,8 @@
     #include "../thread.h"
 #endif
 #include "tests.h"
-#include "../attributetypes.h"
 #include <signal.h>
+#include <stdlib.h>
 #include <setjmp.h>
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -266,20 +266,20 @@ void testLock(){
  */
 int main(int argc,char *argv[]){
     setbuf(stdout, NULL);
-    // testCreate();
+    testCreate();
     // LINE;
     // if(setjmp(buffer) == 0)
     //     testStack();
     // else{
     //     printf(GREEN"Test Passed\n"RESET);
     // }
-    // LINE;
-    // // testJoin();
-    // LINE;
-    // // testExit();
-    // LINE;
-    // testAttr();
-    // // testLock();
-    testSig();
+    LINE;
+    testJoin();
+    LINE;
+    testExit();
+    LINE;
+    testAttr();
+    // testLock();
+    // testSig();
     return 0;
 }

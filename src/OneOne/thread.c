@@ -1,16 +1,12 @@
 #define _GNU_SOURCE
 #define DEV
 #include <sched.h>
-#include <unistd.h>
 #include <sys/stat.h>
-#include <stdio.h>
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/types.h>
-#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/wait.h>
@@ -18,16 +14,12 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
-#include <stdlib.h>
-#include <stdatomic.h>
 #include <limits.h>
 #include <ucontext.h>
-#include <pthread.h>
-#include "thread.h"
-#include "tlibtypes.h"
-#include "attributetypes.h"
-#include "dataStructTypes.h"
+#include "tlib.h"
+#include "utils.h"
 #include "log.h"
+#include "locks.h"
 #include "sighandler.h"
 
 mut_t globalLock;
@@ -95,6 +87,7 @@ static int wrap(void *fa){
         WRAP_SIGNALS(sigArr[i]);
     }
     temp->f(temp->arg);
+    // free(temp->stack);
     register int i asm("eax");
     int regval = i;
     temp->insertedNode->retVal = (void *)&regval;
@@ -139,6 +132,7 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
+        fa->stack = thread_stack;
         tid = clone(wrap,
                     thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
                     CLONE_FLAGS,
@@ -156,6 +150,7 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
+        fa->stack = thread_stack;
         tid = clone(wrap,
                     thread_stack + STACK_SZ + GUARD_SZ,
                     CLONE_FLAGS,

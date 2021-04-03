@@ -6,7 +6,6 @@
     #include "../thread.h"
 #endif
 #include "tests.h"
-#include "../attributetypes.h"
 #include "../log.h"
 #define WITH_LOCKS 1
 #define WITHOUT_LOCKS 0

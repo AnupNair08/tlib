@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
-#include "../attributetypes.h"
 #include "tests.h"
 #include "../log.h"
 #define SZ 1000000

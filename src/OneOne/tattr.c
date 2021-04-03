@@ -1,7 +1,4 @@
-#include "thread.h"
-#include "tlibtypes.h"
-#include "attributetypes.h"
-#include <stdlib.h>
+#include "tlib.h"
 
 static thread_attr __default = {NULL,0,STACK_SZ};
 

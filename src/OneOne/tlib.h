@@ -1,7 +1,7 @@
 /**
- * @file thread.h
+ * @file tlib.h
  * @author Anup Nair & Hrishikesh Athalye
- * @brief API Interface of tlib for programs
+ * @brief Internal Library APIs
  * @version 0.1
  * @date 2021-04-04
  * 
@@ -9,18 +9,33 @@
  * 
  */
 #define _GNU_SOURCE
-#include<stdatomic.h>
 #include<unistd.h>
+#include<stdlib.h>
+
 /**
- * @brief Thread object
+ * @brief Default stack size for a thread 
  */
-typedef unsigned long int thread;
+#define STACK_SZ 65536
 /**
- * @brief Lock Object
+ * @brief Default guard page size for a thread 
  */
-typedef volatile atomic_flag mut_t;
+#define GUARD_SZ getpagesize()
 /**
- * @brief Attribute Object for threads 
+ * @brief Flags passed to clone system call in one-one implementation 
+ */
+#define CLONE_FLAGS CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD |CLONE_SYSVSEM|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID
+#define TGKILL 234
+
+
+/**
+ * @brief Thread Object
+ * 
+ */
+typedef unsigned long thread;
+
+/**
+ * @brief Attribute types for thread object
+ * 
  */
 typedef struct thread_attr {
     void *stack;
@@ -28,24 +43,13 @@ typedef struct thread_attr {
     size_t stackSize;
 } thread_attr;
 
-// Thread related APIs
+// Thread APIs
 int thread_create(thread *,void *, void *,void *);
 int thread_join(thread , void **);
 int thread_kill(pid_t t, int);
 void thread_exit(void *);
 
-// Spin lock related APIs
-int spin_init(mut_t*);
-int spin_acquire(mut_t*);
-int spin_release(mut_t*);
-
-// Mutex related APIs
-int mutex_init(mut_t*);
-int mutex_acquire(mut_t*);
-int mutex_release(mut_t*);
-
-
-// Thread attribute handler APIs
+// Thread attribute APIs
 int thread_attr_init(thread_attr *);
 int thread_attr_destroy(thread_attr *);
 
