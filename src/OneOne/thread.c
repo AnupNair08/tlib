@@ -94,18 +94,11 @@ static int wrap(void *fa){
         base_mask = maskArr[i];
         WRAP_SIGNALS(sigArr[i]);
     }
-    spin_acquire(&globalLock);
-
-    spin_release(&globalLock);
-    // WRAP_SIGNALS(SIGTERM);
-    // WRAP_SIGNALS(SIGFPE);
-    // WRAP_SIGNALS(SIGSYS);
-    // WRAP_SIGNALS(SIGABRT);
-    // WRAP_SIGNALS(SIGPIPE);
     temp->f(temp->arg);
-    // register int i asm("eax");
-    // temp->insertedNode->retVal = i;
-    // log_trace("Thread exited with return value %d", i);
+    register int i asm("eax");
+    int regval = i;
+    temp->insertedNode->retVal = (void *)&regval;
+    // log_trace("Thread exited with return value %d", regval);
 }
 
 /**
@@ -138,7 +131,7 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
     funcargs *fa = (funcargs *)malloc(sizeof(funcargs));
     fa->f = routine;
     fa->arg = arg;
-    // fa->insertedNode = insertedNode;
+    fa->insertedNode = insertedNode;
     if(attr){
         thread_attr *attr_t = (thread_attr *)attr;
         thread_stack = attr_t->stack == NULL ? allocStack(attr_t->stackSize, attr_t->guardSize) : attr_t->stack ;
@@ -236,7 +229,10 @@ int thread_join(thread t, void **retLocation){
         ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
     }
     syscall(SYS_futex , addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-    // if(retLocation) *retLocation = getReturnValue(&__tidList, t);
+    if(retLocation){
+        log_trace("Return value %x %x",*retLocation, retLocation);
+        *retLocation = getReturnValue(&__tidList, t);
+    } 
     singlyLLDelete(&__tidList, t);
     // spin_release(&globalLock);
     return ret;

@@ -38,12 +38,11 @@ int removeThread(tcbQueue *t, unsigned long int tid){
     }
     if(t->front->tcbnode->tid == tid){
         t->front = tmp->next;
+        free(tmp->tcbnode->stack);
         if(t->front == NULL){
             t->back = NULL;
         }
-        // if(tmp->tcbnode->stack){
-        //     free(tmp->tcbnode->stack);
-        // }
+        // free(stack);
         free(tmp->tcbnode->context);
         free(tmp->tcbnode->waiters);
         free(tmp->tcbnode);
@@ -57,14 +56,13 @@ int removeThread(tcbQueue *t, unsigned long int tid){
         }
         while(tmp->next){
             if(tmp->next->tcbnode->tid == tid){
+                free(tmp->next->tcbnode->stack);
                 qnode* delNode = tmp->next;
                 if(delNode == t->back){
                     t->back = tmp;
                 }
                 tmp->next = delNode->next;
-                // if(tmp->tcbnode->stack){
-                //     free(tmp->tcbnode->stack);
-                // }
+                // free(stack);
                 free(delNode->tcbnode->context);
                 free(delNode->tcbnode->waiters);
                 free(delNode->tcbnode);

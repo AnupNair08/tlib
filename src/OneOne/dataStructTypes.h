@@ -10,6 +10,13 @@ typedef struct singlyLL{
     node *tail;
 } singlyLL;
 
+typedef unsigned long thread;
+typedef struct funcargs{
+    void (*f)(void *);
+    void* arg;
+    node* insertedNode;
+} funcargs;
+
 int singlyLLInit(singlyLL*);
 
 node* singlyLLInsert(singlyLL*, unsigned long int);

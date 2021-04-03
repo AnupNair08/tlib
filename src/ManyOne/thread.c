@@ -109,6 +109,7 @@ static void scheduler(){
             setRunnable->thread_state = RUNNABLE;
             reQueue(&__allThreads, setRunnable);
         }
+        // log_info("Stack to be freed %x",temp->stack);
         removeThread(&__allThreads, temp->tid);
     }
     if(flag){
@@ -245,7 +246,8 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
     }
     else{
         // thread_context->uc_stack.ss_sp = attr != NULL ? allocStack(STACK_SZ,0) : allocStack(((thread_attr *)attr)->stackSize,0);
-        thread_context->uc_stack.ss_sp = allocStack(STACK_SZ,0);
+        temp->stack = allocStack(STACK_SZ,0);
+        thread_context->uc_stack.ss_sp = temp->stack;
         thread_context->uc_stack.ss_size = STACK_SZ;
     }
     thread_context->uc_link = __mainproc->context;
@@ -301,6 +303,7 @@ int thread_kill(pid_t t, int signum){
             return 0;
         }
         tcb *temp = getThread(&__allThreads,t);
+        // A memory leak here
         temp->pendingSig = (int *)realloc(temp->pendingSig, (++(temp->numPendingSig) * sizeof(int)));
         temp->pendingSig[temp->numPendingSig - 1] = signum;
     }

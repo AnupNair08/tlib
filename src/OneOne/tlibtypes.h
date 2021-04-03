@@ -1,6 +1,7 @@
 #include<stdlib.h>
 #include<unistd.h>
 #include<ucontext.h>
+#include "thread.h"
 #define STACK_SZ 65536
 #define GUARD_SZ getpagesize()
 #define TGKILL 234
@@ -8,12 +9,7 @@
 #define SCHED_INTERVAL 2000
 
 
-typedef unsigned long thread;
-typedef struct funcargs{
-    void (*f)(void *);
-    void* arg;
-    // node* insertedNode;
-} funcargs;
+
 
 int createManyOne(thread *, void *, void *, void *);
 

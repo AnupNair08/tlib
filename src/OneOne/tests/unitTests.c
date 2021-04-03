@@ -205,8 +205,10 @@ void testSig(){
     thread_create(&t1,NULL,sigroutine,NULL);
     int ret = thread_kill(t1, SIGTERM);
     // log_trace("%d",ret);
-    void** retVal;
-    thread_join(t1, retVal);
+    // void *retVal = malloc(sizeof(int));
+    // log_trace("%x %x",retVal, &retVal);
+    thread_join(t1, NULL);
+    // printf("%d",*(int *)retVal);
 }
 
 
