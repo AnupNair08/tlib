@@ -28,10 +28,10 @@
 #include "attributetypes.h"
 #include "dataStructTypes.h"
 #include "log.h"
+#include "sighandler.h"
 
 mut_t globalLock;
-singlyLL tidList;
-int handledSignal = 0;
+singlyLL __tidList;
 
 /**
  * @brief Library initialzer
@@ -40,15 +40,24 @@ int handledSignal = 0;
 static void init(){
     log_info("Library initialised\n");
     fflush(stdout);
-    singlyLLInit(&tidList);
-    node * insertedNode = singlyLLInsert(&tidList, getpid());
+    spin_init(&globalLock);
+
+    sigset_t signalMask;
+    sigfillset(&signalMask);
+    sigdelset(&signalMask,SIGINT);
+    sigdelset(&signalMask,SIGSTOP);
+    sigdelset(&signalMask,SIGCONT);
+    sigprocmask(SIG_BLOCK,&signalMask,NULL);
+    spin_acquire(&globalLock);
+    singlyLLInit(&__tidList);
+    node * insertedNode = singlyLLInsert(&__tidList, getpid());
+    spin_release(&globalLock);
     if(insertedNode == NULL){
         log_error("Thread address not found");
         // spin_release(&globalLock);
         return;
     }
     insertedNode->tidCpy = getpid();
-    spin_init(&globalLock);
 }
 
 /**
@@ -75,18 +84,29 @@ static void* allocStack(size_t size, size_t guard){
  * @param fa Function pointer of the routine passed to the thread
  * @return int 
  */
-// static int wrap(void *fa){
-//     spin_acquire(&globalLock);
-//     spin_release(&globalLock);
-//     funcargs *temp;
-//     temp = (funcargs *)fa;
-//     signal(SIGINT,SIG_DFL);
-//     signal(SIGSTOP,SIG_DFL);
-//     signal(SIGCONT,SIG_DFL);
-//     handledSignal = 1;
-//     temp->f(temp->arg);
-//     return 0;
-// }
+static int wrap(void *fa){
+    funcargs *temp;
+    temp = (funcargs *)fa;
+    sigset_t base_mask;
+    sigset_t maskArr[5];
+    int sigArr[5] = {SIGTERM, SIGFPE, SIGSYS, SIGABRT, SIGPIPE};
+    for(int i = 0 ;i < 5;i++){
+        base_mask = maskArr[i];
+        WRAP_SIGNALS(sigArr[i]);
+    }
+    spin_acquire(&globalLock);
+
+    spin_release(&globalLock);
+    // WRAP_SIGNALS(SIGTERM);
+    // WRAP_SIGNALS(SIGFPE);
+    // WRAP_SIGNALS(SIGSYS);
+    // WRAP_SIGNALS(SIGABRT);
+    // WRAP_SIGNALS(SIGPIPE);
+    temp->f(temp->arg);
+    // register int i asm("eax");
+    // temp->insertedNode->retVal = i;
+    // log_trace("Thread exited with return value %d", i);
+}
 
 /**
  * 
@@ -109,12 +129,16 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
         init();
     }
     spin_acquire(&globalLock);
-    node * insertedNode = singlyLLInsert(&tidList, 0);
+    node * insertedNode = singlyLLInsert(&__tidList, 0);
     spin_release(&globalLock);
     if(insertedNode == NULL){
         log_error("Thread address not found");
         return -1;
     }
+    funcargs *fa = (funcargs *)malloc(sizeof(funcargs));
+    fa->f = routine;
+    fa->arg = arg;
+    // fa->insertedNode = insertedNode;
     if(attr){
         thread_attr *attr_t = (thread_attr *)attr;
         thread_stack = attr_t->stack == NULL ? allocStack(attr_t->stackSize, attr_t->guardSize) : attr_t->stack ;
@@ -122,10 +146,10 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
-        tid = clone(routine,
+        tid = clone(wrap,
                     thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
                     CLONE_FLAGS,
-                    arg,
+                    (void *)fa,
                     &(insertedNode->tid),
                     NULL, 
                     &(insertedNode->tid));
@@ -139,10 +163,10 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
-        tid = clone(routine,
+        tid = clone(wrap,
                     thread_stack + STACK_SZ + GUARD_SZ,
                     CLONE_FLAGS,
-                    arg,
+                    (void *)fa,
                     &(insertedNode->tid),
                     NULL, 
                     &(insertedNode->tid));
@@ -169,7 +193,7 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
 int thread_kill(pid_t tid, int signum){
     int ret;
     if(signum == SIGINT || signum == SIGCONT || signum == SIGSTOP){
-       killAllThreads(&tidList, signum);
+       killAllThreads(&__tidList, signum);
        pid_t pid = getpid();
        ret = syscall(TGKILL, pid, gettid(), signum);
        if(ret == -1){
@@ -197,13 +221,13 @@ int thread_kill(pid_t tid, int signum){
 int thread_join(thread t, void **retLocation){
     // spin_acquire(&globalLock);
     int status;
-    void *addr = returnCustomTidAddress(&tidList, t);
+    void *addr = returnCustomTidAddress(&__tidList, t);
     if(addr == NULL){
         // spin_release(&globalLock);
         return ESRCH;
     }
     if(*((pid_t*)addr) == 0){
-        singlyLLDelete(&tidList, t);
+        singlyLLDelete(&__tidList, t);
         // spin_release(&globalLock);
         return EINVAL;
     }
@@ -212,21 +236,21 @@ int thread_join(thread t, void **retLocation){
         ret = syscall(SYS_futex , addr, FUTEX_WAIT, t, NULL, NULL, 0);
     }
     syscall(SYS_futex , addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-    singlyLLDelete(&tidList, t);
-    if(retLocation) *retLocation = (void *)&ret;
+    // if(retLocation) *retLocation = getReturnValue(&__tidList, t);
+    singlyLLDelete(&__tidList, t);
     // spin_release(&globalLock);
     return ret;
 }
 
 
 void thread_exit(void *ret){
-    void *addr = returnCustomTidAddress(&tidList, gettid());
+    void *addr = returnCustomTidAddress(&__tidList, gettid());
     if(addr == NULL){
         log_info("Thread already exited");
         return;
     }
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-    singlyLLDelete(&tidList, gettid());
+    singlyLLDelete(&__tidList, gettid());
     kill(SIGINT,gettid());
     return;
 }

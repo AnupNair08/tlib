@@ -1,6 +1,10 @@
 #include<signal.h>
 #include<stdio.h>
 
+void TLIB_SIG_HANDLER(int signum){
+    printf("Thread specific signal handled\n");
+}
+
 #define WRAP_SIGNALS \
     signal(SIGTERM, TLIB_SIG_HANDLER); \
     signal(SIGFPE, TLIB_SIG_HANDLER); \
@@ -9,7 +13,4 @@
     signal(SIGABRT, TLIB_SIG_HANDLER); \
 
  
-void TLIB_SIG_HANDLER(int signum){
-    printf("Thread specific signal handled\n");
-}
 

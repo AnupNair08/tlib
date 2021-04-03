@@ -104,11 +104,10 @@ static void scheduler(){
         for(int j = 0; j < temp->numWaiters; j++){
             tcb* setRunnable = getThread(&__allThreads, temp->waiters[i]);
             // log_info("%d was waiting for %d, numwaiters:%d\n", temp->waiters[i], exited[i], temp->numWaiters);
-            fflush(stdout);
             //issue here, the if is a hack
-            if(setRunnable){
-                setRunnable->thread_state = RUNNABLE;
-            }
+            log_trace("number of waiters for thread %d = %d\n", temp->tid, temp->numWaiters);
+            setRunnable->thread_state = RUNNABLE;
+            reQueue(&__allThreads, setRunnable);
         }
         removeThread(&__allThreads, temp->tid);
     }
@@ -200,18 +199,9 @@ void wrapRoutine(void *fa){
     exited[numExited-1] = __curproc->tid; 
     // __curproc = __mainproc;
     // __mainproc->thread_state = RUNNING;
+    free(temp);
     enabletimer();
-    int flag = 0;
-    for(int i = 0; i < __curproc->numWaiters; i++){
-        if(__curproc->waiters[__curproc->numWaiters] == __mainproc->tid){
-            __mainproc->thread_state = RUNNING;
-            flag = 1;
-            break;
-        }
-    }
-    if(flag == 0){
-        switchToScheduler();
-    }
+    switchToScheduler();
 }
 
 int thread_create(thread *t, void *attr, void *routine, void *arg){
@@ -236,6 +226,7 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
     temp->pendingSig = NULL;
     temp->numPendingSig = 0;
     temp->numWaiters = 0;
+    temp->stack = NULL;
     funcargs* fa = (funcargs*)malloc(sizeof(funcargs));
     fa->f = routine;
     fa->arg = arg;
@@ -247,7 +238,8 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
             thread_context->uc_stack.ss_size = ((thread_attr *)attr)->stackSize;
         }
         else if(((thread_attr *)attr)->stackSize){
-            thread_context->uc_stack.ss_sp = allocStack(((thread_attr *)attr)->stackSize,0);
+            temp->stack = allocStack(((thread_attr *)attr)->stackSize,0);
+            thread_context->uc_stack.ss_sp = temp->stack;
             thread_context->uc_stack.ss_size = ((thread_attr *)attr)->stackSize;
         }
     }

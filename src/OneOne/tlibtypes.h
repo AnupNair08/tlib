@@ -7,10 +7,12 @@
 #define CLONE_FLAGS CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD |CLONE_SYSVSEM|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID
 #define SCHED_INTERVAL 2000
 
+
 typedef unsigned long thread;
 typedef struct funcargs{
     void (*f)(void *);
     void* arg;
+    // node* insertedNode;
 } funcargs;
 
 int createManyOne(thread *, void *, void *, void *);

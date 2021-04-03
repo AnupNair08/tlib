@@ -1,6 +1,7 @@
 typedef struct node{
     unsigned long int tid;
     unsigned long int tidCpy;
+    void* retVal;
     struct node* next;
 } node;
 
@@ -22,3 +23,5 @@ unsigned long int* returnCustomTidAddress(singlyLL*, unsigned long int);
 void persistTid(singlyLL *, unsigned long int);
 
 int killAllThreads(singlyLL*, int signum);
+
+void* getReturnValue(singlyLL *, thread);

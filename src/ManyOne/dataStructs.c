@@ -41,7 +41,9 @@ int removeThread(tcbQueue *t, unsigned long int tid){
         if(t->front == NULL){
             t->back = NULL;
         }
-        // free(tmp->tcbnode->stack);
+        // if(tmp->tcbnode->stack){
+        //     free(tmp->tcbnode->stack);
+        // }
         free(tmp->tcbnode->context);
         free(tmp->tcbnode->waiters);
         free(tmp->tcbnode);
@@ -60,7 +62,9 @@ int removeThread(tcbQueue *t, unsigned long int tid){
                     t->back = tmp;
                 }
                 tmp->next = delNode->next;
-                // free(delNode->tcbnode->stack);
+                // if(tmp->tcbnode->stack){
+                //     free(tmp->tcbnode->stack);
+                // }
                 free(delNode->tcbnode->context);
                 free(delNode->tcbnode->waiters);
                 free(delNode->tcbnode);
@@ -156,6 +160,33 @@ void queueRunning(tcbQueue *t){
                 t->back = temp;
             }
             addThread(t, retTcb);
+            free(delNode);
+            break;
+        }
+        temp = temp->next;
+    }
+    return;
+}
+
+void reQueue(tcbQueue *t, tcb* tcb){
+    qnode *temp = t->front;
+    if(temp == NULL){
+        return;
+    }
+    if(temp->tcbnode->tid == tcb->tid){
+        t->front = t->front->next;
+        addThread(t, tcb);
+        free(temp);
+        return;
+    }
+    while(temp->next){
+        struct qnode* delNode =  temp->next;
+        if(delNode->tcbnode->tid == tcb->tid){
+            temp->next = delNode->next;
+            if(delNode == t->back){
+                t->back = temp;
+            }
+            addThread(t, tcb);
             free(delNode);
             break;
         }

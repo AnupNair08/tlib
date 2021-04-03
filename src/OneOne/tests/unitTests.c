@@ -163,12 +163,12 @@ void handlesegfault(int signo){
 }
 
 
-void sigroutine(){
+int sigroutine(){
     signal(SIGSEGV,handlesegfault);
     int i = 0;
     while(i < 5){puts("F"); sleep(1); i++;}
     log_info("Exiting");
-    return;
+    return 69;
 }
 
 void sigroutine1(){
@@ -181,27 +181,32 @@ void handlestop(){
 }
 
 /**
- * @brief Functions to test signal handling  
- * 
+ * @brief Functions to test signal handling  TERM
  */
 void testSig(){
     // Send a thread specific signal
-    signal(SIGINT,handlestop);
-    int ret;
-    if(setjmp(buffer1) == 0){
-        thread t1;
-        thread_create(&t1,NULL,sigroutine,NULL);
-        ret = thread_kill(t1, SIGSTOP);
-        thread_join(t1,NULL);
-    }
-    else{
-        // Send a process specific signal
-        // thread t2;
-        // create(&t2,NULL,sigroutine1,NULL);
-        // ret = thread_kill(t2, SIGALRM);
-        // thread_join(t2,NULL);
-    } 
-    printf(GREEN"Test Passed\n"RESET);
+    // signal(SIGINT,handlestop);
+    // int ret;
+    // if(setjmp(buffer1) == 0){
+    //     thread t1;
+    //     thread_create(&t1,NULL,sigroutine,NULL);
+    //     ret = thread_kill(t1, SIGSTOP);
+    //     thread_join(t1,NULL);
+    // }
+    // else{
+    //     // Send a process specific signal
+    //     // thread t2;
+    //     // create(&t2,NULL,sigroutine1,NULL);
+    //     // ret = thread_kill(t2, SIGALRM);
+    //     // thread_join(t2,NULL);
+    // } 
+    // printf(GREEN"Test Passed\n"RESET);
+    thread t1;
+    thread_create(&t1,NULL,sigroutine,NULL);
+    int ret = thread_kill(t1, SIGTERM);
+    // log_trace("%d",ret);
+    void** retVal;
+    thread_join(t1, retVal);
 }
 
 
@@ -259,19 +264,20 @@ void testLock(){
  */
 int main(int argc,char *argv[]){
     setbuf(stdout, NULL);
-    testCreate();
-    LINE;
-    if(setjmp(buffer) == 0)
-        testStack();
-    else{
-        printf(GREEN"Test Passed\n"RESET);
-    }
-    LINE;
-    // testJoin();
-    LINE;
-    // testExit();
-    LINE;
-    testAttr();
-    // testLock();
+    // testCreate();
+    // LINE;
+    // if(setjmp(buffer) == 0)
+    //     testStack();
+    // else{
+    //     printf(GREEN"Test Passed\n"RESET);
+    // }
+    // LINE;
+    // // testJoin();
+    // LINE;
+    // // testExit();
+    // LINE;
+    // testAttr();
+    // // testLock();
+    testSig();
     return 0;
 }

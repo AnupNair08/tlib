@@ -15,3 +15,4 @@ tcb* getThread(tcbQueue *, thread);
 void printAllmo(tcbQueue *);
 void queueRunning(tcbQueue *);
 int removeThread(tcbQueue *, unsigned long int);
+void reQueue(tcbQueue *, tcb *);

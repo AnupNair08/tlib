@@ -131,3 +131,14 @@ void printAllNodes(singlyLL *l){
     printf("\n");
     return;
 }
+
+void* getReturnValue(singlyLL *l, thread tid){
+    node* tmp = l->head;
+    while(tmp){ 
+        if(tmp->tid == tid){
+            return tmp->retVal;
+        }
+        tmp = tmp->next;
+    }
+    return NULL;
+}
