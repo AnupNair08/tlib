@@ -40,6 +40,13 @@ unsigned long int __nextpid;
 int* exited = NULL;
 int numExited = 0;
 
+/**
+ * @brief Function to allocate a stack to Many One threads
+ * 
+ * @param size Size of stack excluding the guard size
+ * @param guard Size of guard page
+ * @return void
+ */
 static void* allocStack(size_t size, size_t guard){    
     void *stack = NULL;  
     //Align the memory to a 64 bit compatible page size and associate a guard area for the stack 
@@ -50,6 +57,11 @@ static void* allocStack(size_t size, size_t guard){
     return stack;
 }
 
+/**
+ * @brief Function to create signal sets for threads
+ * 
+ * @return void
+ */
 static void setSignals(){
     sigfillset(&__signalList);
     sigdelset(&__signalList,SIGINT);
@@ -57,6 +69,12 @@ static void setSignals(){
     sigdelset(&__signalList,SIGCONT);
     sigprocmask(SIG_BLOCK,&__signalList,NULL);
 }
+
+/**
+ * @brief Function to start an interval timer
+ * 
+ * @return void
+ */
 static void starttimer(){
     struct itimerval it_val;
     it_val.it_interval.tv_sec = 2;
@@ -70,6 +88,11 @@ static void starttimer(){
     return;
 }
 
+/**
+ * @brief Function to make a thread handle timer interrupts
+ * 
+ * @return void
+ */
 static void enabletimer(){
     if(signal(SIGALRM, switchToScheduler) == SIG_ERR){
         perror("Timer ");
@@ -78,6 +101,11 @@ static void enabletimer(){
     return;
 }
 
+/**
+ * @brief Function to make a thread ignore timer interrupts
+ * 
+ * @return void
+ */
 static void disabletimer(){
     if(signal(SIGALRM,SIG_IGN) == SIG_ERR){
         perror("Timer ");
@@ -86,6 +114,11 @@ static void disabletimer(){
     return;
 }
 
+/**
+ * @brief Function to switch to the scheduler's context, acts as a coroutine to scheduler()
+ * 
+ * @return void
+ */
 static void switchToScheduler(){
     if(swapcontext(__curproc->context, __scheduler->context) == -1){
         perror("Context switch: ");
@@ -94,6 +127,11 @@ static void switchToScheduler(){
     enabletimer();
 }
 
+/**
+ * @brief Function to run the scheduler, acts as a coroutine to switchToScheduler()
+ * 
+ * @return void
+ */
 static void scheduler(){
     disabletimer();
     int flag = 0;
@@ -150,9 +188,11 @@ static void scheduler(){
     }
 }
 
-
+/**
+ * @brief Library initialzer
+ * 
+ */
 static void initManyOne(){
-    
     log_info("Library initialized");
     spin_init(&globallock);
     setSignals();    
@@ -186,10 +226,20 @@ static void initManyOne(){
     starttimer();
 }
 
+/**
+ * @brief Custom signal handler
+ * 
+ * @return void
+ */
 void handlecustom(){
     log_trace("Signal Handled in the Thread");
 }
 
+/**
+ * @brief Wrapper function that internally invokes the thread routine
+ * 
+ * @return void
+ */
 void wrapRoutine(void *fa){
     WRAP_SIGNALS;
     funcargs *temp = (funcargs *)fa;
@@ -198,13 +248,21 @@ void wrapRoutine(void *fa){
     disabletimer();
     exited = (int*)realloc(exited, (++numExited)*sizeof(int));
     exited[numExited-1] = __curproc->tid; 
-    // __curproc = __mainproc;
-    // __mainproc->thread_state = RUNNING;
     free(temp);
     enabletimer();
     switchToScheduler();
 }
 
+/**
+ * 
+ * @brief Create a Many One mapped thread  
+ * 
+ * @param t Reference to the thread
+ * @param routine Function associated with the thread
+ * @param attr Thread attributes
+ * @param arg Arguments to the routine
+ * @return thread 
+ */
 int thread_create(thread *t, void *attr, void *routine, void *arg){
     // Disable any switches during creation
     disabletimer();
@@ -258,11 +316,18 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
     addThread(&__allThreads,temp);
     *t = temp->tid;
     spin_release(&globallock);
-    enabletimer();
     // Start the timer for the main thread
+    enabletimer();
     return 0;
 }
 
+/**
+ * @brief Function to wait for a specific thread to terminate
+ * 
+ * @param t TID of the thread to wait for
+ * @param guard Size of guard pag
+ * @return int
+ */
 int thread_join(thread t, void **retLocation){
     // log_info("trying to join thread %d\n", t);
     fflush(stdout);
@@ -290,7 +355,13 @@ int thread_join(thread t, void **retLocation){
     return 0;
 }
 
-
+/**
+ * @brief Function to send signals to a specific thread
+ * 
+ * @param t TID of the thread to which the signal has to be sent
+ * @param signum Signal number of the signal to be sent to the thread
+ * @return int
+ */
 int thread_kill(pid_t t, int signum){
     spin_acquire(&globallock);
     if(signum == SIGINT || signum == SIGCONT || signum == SIGSTOP){

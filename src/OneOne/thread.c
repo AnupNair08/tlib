@@ -234,6 +234,12 @@ int thread_join(thread t, void **retLocation){
 }
 
 
+/**
+ * @brief Function to make a thread terminate itself
+ * 
+ * @param ret return value of the thread to be available to thread_join()
+ * @return void
+ */
 void thread_exit(void *ret){
     void *addr = returnCustomTidAddress(&__tidList, gettid());
     if(addr == NULL){
