@@ -1,10 +1,10 @@
 #define _GNU_SOURCE
-#include<stdatomic.h>
-#include"log.h"
+#include <stdatomic.h>
+#include "log.h"
 #include <sys/syscall.h>
-#include<stdio.h>
+#include <stdio.h>
 #include <unistd.h>
-#include<linux/futex.h>
+#include <linux/futex.h>
 
 typedef volatile atomic_flag mut_t;
 

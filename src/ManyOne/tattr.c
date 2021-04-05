@@ -1,5 +1,4 @@
-#include "thread.h"
-#include "tlibtypes.h"
+#include "tlib.h"
 #include "attributetypes.h"
 #include <stdlib.h>
 

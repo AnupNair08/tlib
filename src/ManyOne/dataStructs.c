@@ -1,13 +1,13 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
-#include "tlibtypes.h"
-#include "dataStructTypes.h"
+#include "tlib.h"
 #include <signal.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include "log.h"
+#include "locks.h"
 
 #define TGKILL 234
 
@@ -145,6 +145,7 @@ void queueRunning(tcbQueue *t){
     if(temp->tcbnode->thread_state == RUNNING){
         struct tcb* retTcb =  temp->tcbnode;
         t->front = t->front->next;
+        retTcb->thread_state = RUNNABLE;
         addThread(t, retTcb);
         free(temp);
         return;
@@ -157,6 +158,7 @@ void queueRunning(tcbQueue *t){
             if(delNode == t->back){
                 t->back = temp;
             }
+            retTcb->thread_state = RUNNABLE;
             addThread(t, retTcb);
             free(delNode);
             break;
@@ -191,4 +193,44 @@ void reQueue(tcbQueue *t, tcb* tcb){
         temp = temp->next;
     }
     return;
+}
+
+void unlockMutex(tcbQueue *t, mut_t* lock){
+    qnode* tmp = t->front;
+    tcb** requeue = NULL;
+    int numRequeue = 0;
+    while(tmp){
+        // log_trace("%x", lock);
+        //occasionally segfaults here
+        // log_trace("tmp : %x %d", tmp, tmp);
+        // log_trace("tcbnode : %lx %ld", tmp->tcbnode, tmp->tcbnode);
+        if(tmp==NULL || tmp->tcbnode == NULL){
+            // log_trace("abcd");
+        }
+        if(tmp->tcbnode->mutexWait == lock){
+            tmp->tcbnode->mutexWait = NULL;
+            tmp->tcbnode->thread_state = RUNNABLE;
+            // requeue = (tcb**)realloc(requeue, ++numRequeue);
+            // requeue[numRequeue-1] = tmp->tcbnode;
+        }
+        tmp = tmp->next;
+    }
+    // for(int i = 0; i < numRequeue; i++){
+    //     reQueue(t, requeue[i]);
+    // }
+    // free(requeue);
+    return;
+}
+
+void initTcb(tcb *t, int initState, thread tid, ucontext_t* context){
+    t->thread_state = initState;
+    t->tid = tid;
+    t->exited = 0;
+    t->waiters = NULL;
+    t->numWaiters = 0;
+    t->numPendingSig = 0;
+    t->pendingSig = NULL;
+    t->mutexWait = NULL;
+    t->context = context;
+    t->stack = NULL;
 }

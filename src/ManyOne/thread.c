@@ -22,17 +22,14 @@
 #include <stdatomic.h>
 #include <limits.h>
 #include <ucontext.h>
-#include "locks.h"
-#include "tlibtypes.h"
 #include "attributetypes.h"
-#include "dataStructTypes.h"
 #include "log.h"
-#include "thread.h"
+#include "tlib.h"
 #include "sighandler.h"
 
 tcb* __curproc = NULL;
-tcb* __mainproc = NULL;
 tcb* __scheduler = NULL;
+tcb* __mainproc = NULL;
 tcbQueue __allThreads;
 mut_t globallock;
 sigset_t __signalList;
@@ -67,6 +64,7 @@ static void setSignals(){
     sigdelset(&__signalList,SIGINT);
     sigdelset(&__signalList,SIGSTOP);
     sigdelset(&__signalList,SIGCONT);
+    sigdelset(&__signalList,SIGALRM);
     sigprocmask(SIG_BLOCK,&__signalList,NULL);
 }
 
@@ -77,9 +75,9 @@ static void setSignals(){
  */
 static void starttimer(){
     struct itimerval it_val;
-    it_val.it_interval.tv_sec = 2;
+    it_val.it_interval.tv_sec = 1;
     it_val.it_interval.tv_usec = 0;
-    it_val.it_value.tv_sec = 2;
+    it_val.it_value.tv_sec = 1;
     it_val.it_value.tv_usec = 0;
     if (setitimer(ITIMER_REAL, &it_val, NULL) == -1) {
         perror("setitimer");
@@ -93,7 +91,7 @@ static void starttimer(){
  * 
  * @return void
  */
-static void enabletimer(){
+void enabletimer(){
     if(signal(SIGALRM, switchToScheduler) == SIG_ERR){
         perror("Timer ");
         exit(EXIT_FAILURE); 
@@ -106,7 +104,7 @@ static void enabletimer(){
  * 
  * @return void
  */
-static void disabletimer(){
+void disabletimer(){
     if(signal(SIGALRM,SIG_IGN) == SIG_ERR){
         perror("Timer ");
         exit(EXIT_FAILURE);
@@ -119,9 +117,9 @@ static void disabletimer(){
  * 
  * @return void
  */
-static void switchToScheduler(){
+void switchToScheduler(){
     if(swapcontext(__curproc->context, __scheduler->context) == -1){
-        perror("Context switch: ");
+        perror("Context switch");
         exit(EXIT_FAILURE); 
     }
     enabletimer();
@@ -134,58 +132,59 @@ static void switchToScheduler(){
  */
 static void scheduler(){
     disabletimer();
-    int flag = 0;
-    // log_info("Call to scheduler (interrupted tid %d)", __curproc->tid);
+    queueRunning(&__allThreads);
+    int curprocexited = 0;
     for(int i = 0; i < numExited; i++){
-        flag = 1;
         tcb* temp = getThread(&__allThreads, exited[i]);
+        if(temp->tid == __curproc->tid){
+            curprocexited = 1;
+        }
         for(int j = 0; j < temp->numWaiters; j++){
             tcb* setRunnable = getThread(&__allThreads, temp->waiters[i]);
-            // log_info("%d was waiting for %d, numwaiters:%d\n", temp->waiters[i], exited[i], temp->numWaiters);
-            //issue here, the if is a hack
-            log_trace("number of waiters for thread %d = %d\n", temp->tid, temp->numWaiters);
             setRunnable->thread_state = RUNNABLE;
             reQueue(&__allThreads, setRunnable);
         }
-        // log_info("Stack to be freed %x",temp->stack);
         removeThread(&__allThreads, temp->tid);
     }
-    if(flag){
+    if(numExited){
         free(exited);
-        numExited = 0;
         exited = NULL;
     }
-
-    spin_acquire(&globallock);
+    numExited = 0;
     setSignals();
-    queueRunning(&__allThreads);
     tcb *next = getNextThread(&__allThreads);
-    spin_release(&globallock);
-
     if(!next) return;
     int k = next->numPendingSig;
     sigset_t mask;
     for(int i = 0 ;i < k;i++) {
         // log_trace("Signal %d pending for %ld",next->pendingSig[i],next->tid);
-        spin_acquire(&globallock);
         sigaddset(&mask,next->pendingSig[i]);
         sigprocmask(SIG_UNBLOCK,&mask,NULL);
-        spin_release(&globallock);
         // Remove from the pending list
         next->numPendingSig -= 1;
         raise(next->pendingSig[i]);
     }
     // Set new thread as running and current thread as runnable
-    next->thread_state = RUNNING;
-    tcb* __prev = __curproc;
-    __curproc = next;
-    if(__prev->thread_state != WAITING){
-        __prev->thread_state = RUNNABLE;
+    if(curprocexited == 0){
+        tcb* __prev = __curproc;
+        __curproc = next;
+        next->thread_state = RUNNING;
+        log_trace("Scheduler: switching from %d to %d", __prev->tid, next->tid);
+        if(setcontext(next->context) == -1){
+            perror("Context Switch: ");
+            exit(EXIT_FAILURE);
+        }
     }
-    if(setcontext(next->context) == -1){
-        perror("Context Switch: ");
-        exit(EXIT_FAILURE);
+    else{
+        __curproc = next;
+        next->thread_state = RUNNING;
+        log_trace("Scheduler: switching from deleted to %d", next->tid);
+        if(setcontext(next->context) == -1){
+            perror("Context Switch: ");
+            exit(EXIT_FAILURE);
+        }
     }
+    
 }
 
 /**
@@ -196,32 +195,25 @@ static void initManyOne(){
     log_info("Library initialized");
     spin_init(&globallock);
     setSignals();    
+    __allThreads.back = NULL;
+    __allThreads.front = NULL;
+    __allThreads.len = 0;
     __mainproc = (tcb*)malloc(sizeof(tcb));
-    __mainproc->thread_state = RUNNING;
-    __mainproc->tid = getpid();
-    __mainproc->exited = 0;
-    __mainproc->waiters = NULL;
-    __mainproc->numWaiters = 0;
     ucontext_t* thread_context = (ucontext_t *)malloc(sizeof(ucontext_t));
     getcontext(thread_context);
-    __mainproc->context = thread_context;
+    initTcb(__mainproc, RUNNING, getpid(), thread_context);
+    __curproc = __mainproc;
     __nextpid = getpid()+1;
     addThread(&__allThreads,__mainproc);
-    __curproc = __mainproc;
     
     __scheduler = (tcb*)malloc(sizeof(tcb));
-    __scheduler->thread_state = RUNNING;
-    __scheduler->tid = 0;
-    __scheduler->exited = 0;
-    __scheduler->waiters = NULL;
-    __scheduler->numWaiters = 0;
     thread_context = (ucontext_t *)malloc(sizeof(ucontext_t));
     getcontext(thread_context);
     thread_context->uc_stack.ss_sp = allocStack(STACK_SZ,0);
     thread_context->uc_stack.ss_size = STACK_SZ;
     thread_context->uc_link = __mainproc->context;
-    makecontext(thread_context, scheduler,0);
-    __scheduler->context = thread_context;
+    makecontext(thread_context, scheduler, 0);
+    initTcb(__scheduler, RUNNING, 0, thread_context);
 
     starttimer();
 }
@@ -272,25 +264,14 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
         initManyOne();
         isInit = 1;
     }
-    ucontext_t te;
-    getcontext(&te);
     ucontext_t *thread_context = (ucontext_t *)malloc(sizeof(ucontext_t));
     // Allocate a new TCB and set all fields
     tcb *temp = (tcb *)malloc(sizeof(tcb));
-    temp->thread_state = RUNNABLE;
-    temp->tid = __nextpid++;
-    //for handling join
-    temp->exited = 0;
-    temp->waiters = NULL;
-    temp->pendingSig = NULL;
-    temp->numPendingSig = 0;
-    temp->numWaiters = 0;
-    temp->stack = NULL;
+    getcontext(thread_context);
     funcargs* fa = (funcargs*)malloc(sizeof(funcargs));
     fa->f = routine;
     fa->arg = arg;
     // Context of thread is modified to accepts timer interrupts
-    getcontext(thread_context);
     if(attr){
         if(((thread_attr *)attr)->stack){
             thread_context->uc_stack.ss_sp = ((thread_attr *)attr)->stack;
@@ -310,12 +291,10 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
     }
     thread_context->uc_link = __mainproc->context;
     makecontext(thread_context,(void*)&wrapRoutine,1,(void *)(fa));
-    temp->context = thread_context;
+    initTcb(temp, RUNNABLE, __nextpid++, thread_context);
     // Add the thread to list of runnable threads
-    spin_acquire(&globallock);
     addThread(&__allThreads,temp);
     *t = temp->tid;
-    spin_release(&globallock);
     // Start the timer for the main thread
     enabletimer();
     return 0;
@@ -330,26 +309,23 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
  */
 int thread_join(thread t, void **retLocation){
     // log_info("trying to join thread %d\n", t);
-    fflush(stdout);
     disabletimer();
-    spin_acquire(&globallock);
     tcb* waitedThread = getThread(&__allThreads, t);
     if(waitedThread == NULL){
-        spin_release(&globallock);
         if(retLocation) *retLocation = (void *)ESRCH;
+        enabletimer();
         return ESRCH;
     }
     // check if not joinable, check if another thread is waiting (or not?)
     if(waitedThread->exited){
-        spin_release(&globallock);
         if(retLocation) *retLocation = (void *)0;
+        enabletimer();
         return 0;
     }
     //Add thread to the list of waiters
     waitedThread->waiters = (int*)realloc(waitedThread->waiters, (++(waitedThread->numWaiters))*sizeof(int));
     waitedThread->waiters[waitedThread->numWaiters-1] = __curproc->tid;
     __curproc->thread_state = WAITING;
-    spin_release(&globallock);
     switchToScheduler();
     if(retLocation) *retLocation = (void *)0;
     return 0;
@@ -363,14 +339,14 @@ int thread_join(thread t, void **retLocation){
  * @return int
  */
 int thread_kill(pid_t t, int signum){
-    spin_acquire(&globallock);
+    disabletimer();
     if(signum == SIGINT || signum == SIGCONT || signum == SIGSTOP){
         kill(getpid(),signum);
     }
     else{
         if(__curproc->tid == t){
             raise(signum);
-            spin_release(&globallock);
+            enabletimer();
             return 0;
         }
         tcb *temp = getThread(&__allThreads,t);
@@ -378,5 +354,5 @@ int thread_kill(pid_t t, int signum){
         temp->pendingSig = (int *)realloc(temp->pendingSig, (++(temp->numPendingSig) * sizeof(int)));
         temp->pendingSig[temp->numPendingSig - 1] = signum;
     }
-    spin_release(&globallock);
+    enabletimer();
 }

@@ -36,7 +36,8 @@ alltest: $(TESTSMANYONE) $(TESTSONEONE) $(SRCMANYONE) $(SRCONEONE)
 	$(CC) $(CFLAGS) -c $(TESTSMANYONE) $(SRCMANYONE) 
 	$(CC) -g manyTests.o $(OBJMANYONE) -o manyTests
 	$(CC) matrix.o $(OBJMANYONE) -o matrix 
-	@mv *.o manyTests matrix $(BINMANYONE)
+	$(CC) -g lockTests.o $(OBJMANYONE) -o lockTests
+	@mv *.o manyTests matrix lockTests $(BINMANYONE)
 	$(CC) $(CFLAGS) -c $(TESTSONEONE) $(SRCONEONE) 
 	$(CC) unitTests.o $(OBJONEONE) -o unitTests
 	$(CC) lockTests.o $(OBJONEONE) -o lockTests
