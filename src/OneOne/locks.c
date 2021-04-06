@@ -1,6 +1,11 @@
 #include <sys/syscall.h>
-#include <unistd.h>
 #include <linux/futex.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdatomic.h>
+#include <assert.h>
+#include <asm/prctl.h>
+#include <sys/prctl.h>
 #include "locks.h"
 #include "log.h"
 
@@ -10,9 +15,9 @@
  * @param lock Spinlock object
  * @return int 
  */
-int spin_init(mut_t* lock){
+int spin_init(spin_t* lock){
     // log_debug("Lock initialzed");
-    *lock = (volatile mut_t)ATOMIC_FLAG_INIT;
+    *lock = (volatile spin_t)ATOMIC_FLAG_INIT;
     return 0;
 }
 
@@ -22,7 +27,7 @@ int spin_init(mut_t* lock){
  * @param lock Spinlock object
  * @return int 
  */
-int spin_acquire(mut_t *lock){
+int spin_acquire(spin_t *lock){
     // Atomically busy wait until the lock becomes available
     while(atomic_flag_test_and_set(lock)){
         // log_trace("Waiting for lock");
@@ -36,11 +41,13 @@ int spin_acquire(mut_t *lock){
  * @param lock Spinlock object
  * @return int 
  */
-int spin_release(mut_t *lock){
+int spin_release(spin_t *lock){
     atomic_flag_clear(lock);
     return 0;
 }
 
+atomic_int unlocked;
+atomic_int locked;
 
 /**
  * @brief Initialize the mutex lock object 
@@ -48,10 +55,13 @@ int spin_release(mut_t *lock){
  * @param lock Mutex Lock object
  * @return int 
  */
-int mutex_init(mut_t *lock){
-    *lock = (volatile mut_t)ATOMIC_FLAG_INIT;
+int mutex_init(mutex_t *lock){
+    atomic_init(lock,0);
+    atomic_init(&unlocked,0);
+    atomic_init(&locked,1);
     return 0;
 }
+
 
 /**
  * @brief Atomically acquire the lock and wait by sleeping if not available
@@ -59,14 +69,9 @@ int mutex_init(mut_t *lock){
  * @param lock Mutex Lock object
  * @return int 
  */
-int mutex_acquire(mut_t *lock){
-    // Try to acquire a lock
-    int lockstatus = atomic_flag_test_and_set(lock);
-    if(lockstatus != 0){
-        // If lock is not available, the thread goes to sleep state
-        while(lock!=0){
-            syscall(SYS_futex , lock, FUTEX_WAIT, 1, NULL, NULL, 0);
-        }
+int mutex_acquire(mutex_t *lock){
+    while(!atomic_compare_exchange_strong(lock,&unlocked,1)){
+        syscall(SYS_futex , lock, FUTEX_WAIT, 1, NULL, NULL, 0);
     }
     return 0;
 }
@@ -78,8 +83,8 @@ int mutex_acquire(mut_t *lock){
  * @param lock Mutex Lock object
  * @return int 
  */
-int mutex_release(mut_t *lock){
-    atomic_flag_clear(lock);
+int mutex_release(mutex_t *lock){
+    atomic_compare_exchange_strong(lock,&locked,0);
     syscall(SYS_futex , lock, FUTEX_WAKE, 1, NULL, NULL, 0);
     return 0;
 }

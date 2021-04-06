@@ -14,7 +14,7 @@
 #include "../log.h"
 thread tid;
 thread writerthreads[100],readerthreads[100];
-mut_t x,y;
+spin_t x,y;
 int readercount = 0;
 
 void *reader(void* param)

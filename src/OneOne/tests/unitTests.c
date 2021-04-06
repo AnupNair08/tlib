@@ -34,7 +34,6 @@ void routine(void *i){
  * 
  */
 void testCreate(){
-    mut_t lock;
     int s = 0,f = 0;
     printf("tlib creation test started...\n");
     thread t[10];
@@ -147,7 +146,7 @@ void exitroutine2(void *lock){
 void testExit(){
     printf("tlib exit test started...\n");
     thread t,t2;
-    mut_t lock;
+    spin_t lock;
     spin_init(&lock);
     thread_create(&t,NULL,exitroutine1,(void *)&lock);
     thread_create(&t2,NULL,exitroutine2,(void *)&lock);
@@ -245,15 +244,15 @@ void testAttr(){
 }
 int i = 0;
 void lockroutine(void *lock){
-    mutex_acquire((mut_t *)lock);
+    mutex_acquire((mutex_t *)lock);
     printf("Critical Section\n");
     i++;
     printf("%d\n",i);
-    mutex_release((mut_t *)lock);
+    mutex_release((mutex_t *)lock);
 } 
 void testLock(){
     thread t,g;
-    mut_t lock;
+    mutex_t lock;
     mutex_init(&lock);
     thread_create(&t,NULL,lockroutine,(void *)&lock);
     thread_create(&g,NULL,lockroutine,(void *)&lock);

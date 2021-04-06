@@ -15,29 +15,29 @@ int spinTest = 0;
 short refstring[4];
 
 void routine1(void *l){
-    if(l) spin_acquire((mut_t *)l);
+    if(l) spin_acquire((spin_t *)l);
     printf("Routine 1 Before: %d\n",spinTest);
     refstring[0] = spinTest;
     spinTest++;
     printf("Routine 1 After: %d\n",spinTest);
     refstring[1] = spinTest;
-    if(l) spin_release((mut_t *)l);
+    if(l) spin_release((spin_t *)l);
 }
 
 void routine2(void *l){
-    if(l) spin_acquire((mut_t *)l);
+    if(l) spin_acquire((spin_t *)l);
     printf("Routine 2 Before: %d\n",spinTest);
     refstring[2] = spinTest;
     spinTest++;
     printf("Routine 2 After: %d\n",spinTest);
     refstring[3] = spinTest;
-    if(l) spin_release((mut_t *)l);
+    if(l) spin_release((spin_t *)l);
 }
 
 void testLocks(int type){
     thread t1,t2;
-    mut_t lock;
-    mut_t *temp = NULL;
+    spin_t lock;
+    spin_t *temp = NULL;
     if(type){
         spin_init(&lock);
         temp = &lock;
@@ -57,34 +57,39 @@ int isConsistent(){
             (refstring[0] == 1 && refstring[1] == 2 && refstring[2] == 0 && refstring[3] == 1);
 }
 
-mut_t lock;
-long c1,c2,c,run = 1;
+spin_t lock;
+long c1,c2,c;
+long volatile run = 1;
+
+mutex_t lk; 
 
 void *f1(void *lock){
     while(run){
         c1++;
-        mutex_acquire((mut_t *)lock);
+        mutex_acquire((mutex_t *)lock);
         c++;
-        mutex_release((mut_t *)lock);
+        mutex_release((mutex_t *)lock);
     }
 }
 void *f2(void *lock){
     while(run){
         c2++;
-        mutex_acquire((mut_t *)lock);
+        mutex_acquire((mutex_t *)lock);
         c++;
-        mutex_release((mut_t *)lock);
+        mutex_release((mutex_t *)lock);
     }
 }
 
 int testMutex(){
     log_info("Starting test with Mutex");
-    mutex_init(&lock);
+    mutex_init(&lk);
     thread t1,t2;
-    thread_create(&t1,NULL,f1,(void *)&lock);
-    thread_create(&t2,NULL,f2,(void *)&lock);
+    thread_create(&t1,NULL,f1,(void *)&lk);
+    thread_create(&t2,NULL,f2,(void *)&lk);
     sleep(2);
     run = 0;
+    thread_join(t1,NULL);
+    thread_join(t2,NULL);
     log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n",c1+c2,c);
     if(c1 + c2 - c > 2) printf(RED"Test failed\n"RESET);
     else printf(GREEN"Test passed\n"RESET);
@@ -93,17 +98,17 @@ int testMutex(){
 void *f1spin(void *lock){
     while(run){
         c1++;
-        spin_acquire((mut_t *)lock);
+        spin_acquire((spin_t *)lock);
         c++;
-        spin_release((mut_t *)lock);
+        spin_release((spin_t *)lock);
     }
 }
 void *f2spin(void *lock){
     while(run){
         c2++;
-        spin_acquire((mut_t *)lock);
+        spin_acquire((spin_t *)lock);
         c++;
-        spin_release((mut_t *)lock);
+        spin_release((spin_t *)lock);
     }
 }
 
@@ -115,10 +120,12 @@ int testSpin(){
     log_info("Starting test with Spinlocks");
     spin_init(&lock);
     thread t1,t2;
-    thread_create(&t1,NULL,f1,(void *)&lock);
-    thread_create(&t2,NULL,f2,(void *)&lock);
+    thread_create(&t1,NULL,f1spin,(void *)&lock);
+    thread_create(&t2,NULL,f2spin,(void *)&lock);
     sleep(2);
     run = 0;
+    thread_join(t1,NULL);
+    thread_join(t2,NULL);
     log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n",c1+c2,c);
     if(c1 + c2 - c > 2) printf(RED"Test failed\n"RESET);
     else printf(GREEN"Test passed\n"RESET);

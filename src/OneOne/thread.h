@@ -18,7 +18,7 @@ typedef unsigned long int thread;
 /**
  * @brief Lock Object
  */
-typedef volatile atomic_flag mut_t;
+typedef volatile atomic_flag spin_t;
 /**
  * @brief Attribute Object for threads 
  */
@@ -35,15 +35,15 @@ int thread_kill(pid_t t, int);
 void thread_exit(void *);
 
 // Spin lock related APIs
-int spin_init(mut_t*);
-int spin_acquire(mut_t*);
-int spin_release(mut_t*);
+int spin_init(spin_t*);
+int spin_acquire(spin_t*);
+int spin_release(spin_t*);
 
+typedef volatile atomic_int mutex_t;
 // Mutex related APIs
-int mutex_init(mut_t*);
-int mutex_acquire(mut_t*);
-int mutex_release(mut_t*);
-
+int mutex_init(mutex_t *);
+int mutex_acquire(mutex_t *);
+int mutex_release(mutex_t *);
 
 // Thread attribute handler APIs
 int thread_attr_init(thread_attr *);

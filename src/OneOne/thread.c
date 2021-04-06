@@ -22,7 +22,7 @@
 #include "locks.h"
 #include "sighandler.h"
 
-mut_t globalLock;
+spin_t globalLock;
 singlyLL __tidList;
 
 /**

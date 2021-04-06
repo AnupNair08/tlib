@@ -28,7 +28,7 @@ typedef struct argumets {
 } arguments;
 
 long sum = 0;
-mut_t lock;
+spin_t lock;
 void compute(void *arg){
     arguments *t = (arguments *)arg;
     for(long i = t->low ; i < t->high;i++){
