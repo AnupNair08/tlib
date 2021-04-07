@@ -31,7 +31,7 @@ tcb* __curproc = NULL;
 tcb* __scheduler = NULL;
 tcb* __mainproc = NULL;
 tcbQueue __allThreads;
-mut_t globallock;
+spin_t globallock;
 sigset_t __signalList;
 unsigned long int __nextpid;
 int* exited = NULL;
@@ -243,6 +243,7 @@ void wrapRoutine(void *fa){
     free(temp);
     enabletimer();
     switchToScheduler();
+    // while(1){}
 }
 
 /**
