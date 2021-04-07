@@ -204,9 +204,9 @@ void unlockMutex(tcbQueue *t, mut_t* lock){
         //occasionally segfaults here
         // log_trace("tmp : %x %d", tmp, tmp);
         // log_trace("tcbnode : %lx %ld", tmp->tcbnode, tmp->tcbnode);
-        if(tmp==NULL || tmp->tcbnode == NULL){
-            // log_trace("abcd");
-        }
+        // if(tmp==NULL || tmp->tcbnode == NULL){
+        //     log_trace("abcd");
+        // }
         if(tmp->tcbnode->mutexWait == lock){
             tmp->tcbnode->mutexWait = NULL;
             tmp->tcbnode->thread_state = RUNNABLE;

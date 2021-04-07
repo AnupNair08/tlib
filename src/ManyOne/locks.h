@@ -6,13 +6,14 @@
 #include <unistd.h>
 #include <linux/futex.h>
 
-typedef volatile atomic_flag mut_t;
+typedef volatile atomic_flag spin_t;
+typedef volatile atomic_int mut_t;
 
-int spin_init(mut_t*);
+int spin_init(spin_t*);
 
-int spin_acquire(mut_t *);
+int spin_acquire(spin_t *);
 
-int spin_release(mut_t *);
+int spin_release(spin_t *);
 
 int mutex_init(mut_t *);
 
