@@ -1,3 +1,13 @@
+/**
+ * @file unitTests.c
+ * @author Hrishikesh Athalye & Anup Nair
+ * @brief Unit Tests for tlib to test creation, join, exit, attribute, locks and signals
+ * @version 0.1
+ * @date 2021-04-07
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include <stdio.h>
 #include <unistd.h>
 #ifdef BUILD
@@ -17,34 +27,33 @@
 #define TEST_GDSZ 2048
 #define gettid() syscall(SYS_gettid)
 
-jmp_buf buffer;
-jmp_buf buffer1;
 int TotalTests = 0;
 int success = 0;
 int failure = 0;
 
-void routine(void *i){
-    int a = 10;
-    // long b = a * 100;
-    // sleep(2 * *(int *)i);
-    // sleep(2);
-    // log_trace("thread exited\n");
-    return;
-}
-
 void globalhandle(){
     printf("----------Process wide signal caught by handler----------\n");
     printf(GREEN"Test Passed\n"RESET);
+    success += 1;
 }
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 /**
  * @brief Tests creation of multiple threads with the one one model.
  * 
  */
+
+void routine(void *i){
+    int a = 10;
+    return;
+}
 void testCreate(){
+    fflush(stdout);
     TotalTests += 1;
     int s = 0,f = 0;
-    printf("tlib creation test started...\n");
+    printf(BLUE"Testing thread_create()\n"RESET);
     thread t[10];
     for(int i = 0 ;i < 10; i++){
         if(thread_create(&t[i],NULL,routine,(void *)&i) == 0){
@@ -60,27 +69,29 @@ void testCreate(){
             thread_join(t[i],NULL);
 
 
-    printf(RESET"Test completed with the following statistics:\n");
-    printf(GREEN"Success: %d\n",s);
-    printf(RED"Failures: %d\n"RESET,f);
+    printf(RESET"Create test completed with the following statistics:\n");
+    printf("Success: %d\n",s);
+    printf("Failures: %d\n",f);
     if(f) failure += 1;
     else success += 1;
     return;
 }
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
 /**
- * @brief Functions to test joining on threads
+ * @brief Tests the joining on threads in a pipelined and sequential order
  * 
  */
 void routineJoin(){
     sleep(1);
 }
 void testJoin(){
+    fflush(stdout);
     TotalTests += 1;
-    //Sleep in different intervals (Pipelined test)
-    //Order of join 
     int s = 0,f = 0;
-    printf("tlib join test started...\n");
+    printf(BLUE"Testing thread_join()\n"RESET);
     thread t[10];
     puts("");
     log_trace("Joining threads upon creation in a sequential order");
@@ -109,38 +120,22 @@ void testJoin(){
     }
     for(int i = 0 ; i < 5;i++)
         thread_join(t[i],NULL);
-    printf(RESET"Test completed with the following statistics:\n");
-    printf(GREEN"Success: %d\n",s);
-    printf(RED"Failures: %d\n"RESET,f);
+    printf(RESET"Join test completed with the following statistics:\n");
+    printf("Success: %d\n",s);
+    printf("Failures: %d\n",f);
     if(f) failure += 1;
     else success += 1;
     return;
 }
 
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
 /**
- * @brief Allocate a stack of 8 bytes which will be overflown and then check if guard page generates
- *        seg fault to provide stack protection.
+ * @brief Tests the exit of threads
  * 
  */
-void handleseg(){
-    printf("Guard page handled stack overflow\nReturning control to main\n");
-    longjmp(buffer,1);
-}
-void testStack(){
-    printf("tlib stack test started...\n");
-
-    signal(SIGSEGV,handleseg);
-    thread t;
-    thread_attr attr;
-    if(thread_attr_init(&attr)){
-        log_error("Attribute initialisation failed\n");
-    }
-    thread_attr_setStack(&attr,8);
-    thread_create(&t,&attr,routine,NULL);
-    return;
-}
-
 
 void exitroutine1(void *lock){
     log_info("Exiting thread 1");
@@ -151,41 +146,40 @@ void exitroutine2(void *lock){
     log_info("Exiting thread 2");
     thread_exit(NULL);
 } 
-/**
- * @brief Checking exit of threads
- * 
- */
 void testExit(){
-    printf("tlib exit test started...\n");
-    thread t,t2;
+    fflush(stdout);
+    TotalTests += 1;
+    printf(BLUE"Testing thread_exit()\n"RESET);
+    thread t1,t2;
     spin_t lock;
     spin_init(&lock);
-    thread_create(&t,NULL,exitroutine1,(void *)&lock);
+    thread_create(&t1,NULL,exitroutine1,(void *)&lock);
     thread_create(&t2,NULL,exitroutine2,(void *)&lock);
-    thread_join(t,NULL);
+    thread_join(t1,NULL);
     thread_join(t2,NULL);
     printf("Joining Complete\n");
     printf(GREEN"Test Passed\n"RESET);
+    success += 1;
 }
 
-void handlesegfault(int signo){
-    log_info("Thread received signal number %d",signo);
-    longjmp(buffer1,1);
-}
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
 
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ * @brief Testing Signal Handling for process and thread wide signals
+ * 
+ */
 
 int sigroutine(){
     int i = 0;
     while(i < 3){puts("Running Thread.."); sleep(1); i++;}
     return 0;
 }
-
-/**
- * @brief Signal Handling Tester
- * 
- */
 void testSig(){
-    printf(RED"Testing thread_kill()\n"RESET);
+    fflush(stdout);
+    TotalTests += 3;
+    printf(BLUE"Testing thread_kill()\n"RESET);
     spin_t lock;
     spin_init(&lock);
     thread t1,t2,t3;
@@ -198,9 +192,11 @@ void testSig(){
     thread_join(t1, NULL);
     if(ret != -1){
         printf(GREEN"Test passed\n"RESET);
+        success += 1;
     }
     else{
         printf(RED"Test failed\n"RESET);
+        failure += 1;
     }
 
     printf("\nSending a signal to an already exited thread\n");
@@ -209,9 +205,11 @@ void testSig(){
     ret = thread_kill(t2, SIGTERM);
     if(ret == -1){
         printf(GREEN"Test passed\n"RESET);
+        success += 1;
     }
     else{
         printf(RED"Test failed\n"RESET);
+        failure += 1;
     }
 
     printf("\nSending a process wide signal\n");
@@ -220,9 +218,12 @@ void testSig(){
     ret = thread_kill(t3, SIGINT);
 }
 
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
 /**
- * @brief Functions to check handling of attributes viz. stack, stack and guard page sizes. 
+ * @brief Testing thread attributes creation and updation
  * 
  */
 
@@ -230,7 +231,9 @@ void attrroutine(){
     puts("Thread spawned with all attributes");
 }
 void testAttr(){
-    printf("tlib attribute test started...\n");
+    fflush(stdout);
+    TotalTests += 1;
+    printf(BLUE"Testing thread_attr_*()\n"RESET);
     short err = 0; 
     thread t1;
     void *newstack = malloc(TEST_STSZ/2);
@@ -244,23 +247,38 @@ void testAttr(){
     thread_attr_getGuard(&a) != TEST_GDSZ ? log_error("Guard page size does not match"),err=1 : log_info("Set guard page size to %d",TEST_GDSZ);
     if(err){
         printf(RED"Test failed"RESET);
+        failure += 1;
         return;
     }
     thread_create(&t1,&a,attrroutine,NULL);
     thread_join(t1,NULL);
     thread_attr_destroy(&a);
     printf(GREEN"Test Passed\n"RESET);
+    success += 1;
     return;
 }
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+/**
+ * @brief Testing Locks with a simple crictical section
+ * 
+ */
+
 int i = 0;
+int refstring[2] = { 0, 0};
 void lockroutine(void *lock){
     mutex_acquire((mutex_t *)lock);
     printf("Critical Section\n");
-    i++;
+    refstring[i++] = i;
     printf("%d\n",i);
     mutex_release((mutex_t *)lock);
 } 
 void testLock(){
+    fflush(stdout);
+    TotalTests += 1;
+    printf(BLUE"Testing mutex_*()\n"RESET);
     thread t,g;
     mutex_t lock;
     mutex_init(&lock);
@@ -268,7 +286,18 @@ void testLock(){
     thread_create(&g,NULL,lockroutine,(void *)&lock);
     thread_join(t,NULL);
     thread_join(g,NULL);
+    if(refstring[0] == 1 && refstring[1] == 2) {
+        printf(GREEN"Test Passed\n"RESET);
+        success += 1;
+    }
+    else{
+        printf(RED"Test failed\n"RESET);
+        failure += 1;
+    }
 }
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 /**
  * @brief Caller function
  * 
@@ -276,21 +305,25 @@ void testLock(){
 int main(int argc,char *argv[]){
     setbuf(stdout, NULL);
     signal(SIGINT,globalhandle);
-    // testCreate();
-    // LINE;
-    // if(setjmp(buffer) == 0)
-    //     testStack();
-    // else{
-    //     printf(GREEN"Test Passed\n"RESET);
-    // }
-    // LINE;
-    // testJoin();
-    // LINE;
+    printf("\nRunning Test Suite\n");
+    LINE;
+    testCreate();
+    LINE;
+    testJoin();
+    LINE;
+    testAttr();
+    testLock();
+    LINE;
+    testSig();
+    LINE;
     testExit();
-    // LINE;
-    // testAttr();
-    // testLock();
-    // LINE;
-    // testSig();
+    LINE;
+
+    printf("Test completed with the following statistics:\n");
+    printf("Total Tests: %d\n",TotalTests);
+    printf(GREEN"Success: %d\n"RESET,success);
+    printf(RED"Failed: %d\n"RESET,failure);
+
+
     return 0;
 }

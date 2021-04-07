@@ -122,6 +122,10 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
         return -1;
     }
     funcargs *fa = (funcargs *)malloc(sizeof(funcargs));
+    if(!fa){
+        log_error("Malloc failed");
+        return -1;
+    }
     fa->f = routine;
     fa->arg = arg;
     fa->insertedNode = insertedNode;
@@ -246,8 +250,12 @@ void thread_exit(void *ret){
         log_info("Thread already exited");
         return;
     }
+    if(ret){
+        ret = getReturnValue(&__tidList, gettid());
+    }
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
     singlyLLDelete(&__tidList, gettid());
     kill(SIGINT,gettid());
+
     return;
 }
