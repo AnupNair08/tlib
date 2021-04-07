@@ -19,14 +19,22 @@
 
 jmp_buf buffer;
 jmp_buf buffer1;
+int TotalTests = 0;
+int success = 0;
+int failure = 0;
 
 void routine(void *i){
     int a = 10;
-    long b = a * 100;
+    // long b = a * 100;
     // sleep(2 * *(int *)i);
     // sleep(2);
     // log_trace("thread exited\n");
     return;
+}
+
+void globalhandle(){
+    printf("----------Process wide signal caught by handler----------\n");
+    printf(GREEN"Test Passed\n"RESET);
 }
 
 /**
@@ -34,6 +42,7 @@ void routine(void *i){
  * 
  */
 void testCreate(){
+    TotalTests += 1;
     int s = 0,f = 0;
     printf("tlib creation test started...\n");
     thread t[10];
@@ -54,6 +63,8 @@ void testCreate(){
     printf(RESET"Test completed with the following statistics:\n");
     printf(GREEN"Success: %d\n",s);
     printf(RED"Failures: %d\n"RESET,f);
+    if(f) failure += 1;
+    else success += 1;
     return;
 }
 
@@ -65,6 +76,7 @@ void routineJoin(){
     sleep(1);
 }
 void testJoin(){
+    TotalTests += 1;
     //Sleep in different intervals (Pipelined test)
     //Order of join 
     int s = 0,f = 0;
@@ -100,6 +112,8 @@ void testJoin(){
     printf(RESET"Test completed with the following statistics:\n");
     printf(GREEN"Success: %d\n",s);
     printf(RED"Failures: %d\n"RESET,f);
+    if(f) failure += 1;
+    else success += 1;
     return;
 }
 
@@ -129,15 +143,13 @@ void testStack(){
 
 
 void exitroutine1(void *lock){
-
     log_info("Exiting thread 1");
-
+    thread_exit(NULL);
 } 
 
 void exitroutine2(void *lock){
-
     log_info("Exiting thread 2");
-
+    thread_exit(NULL);
 } 
 /**
  * @brief Checking exit of threads
@@ -163,51 +175,49 @@ void handlesegfault(int signo){
 
 
 int sigroutine(){
-    signal(SIGSEGV,handlesegfault);
     int i = 0;
-    while(i < 5){puts("F"); sleep(1); i++;}
-    log_info("Exiting");
-    return 69;
-}
-
-void sigroutine1(){
-    while(1) log_trace("Waiting to be terminated");
-}
-
-void handlestop(){
-    log_info("Process received signal");
-    return;
+    while(i < 3){puts("Running Thread.."); sleep(1); i++;}
+    return 0;
 }
 
 /**
- * @brief Functions to test signal handling  TERM
+ * @brief Signal Handling Tester
+ * 
  */
 void testSig(){
-    // Send a thread specific signal
-    // signal(SIGINT,handlestop);
-    // int ret;
-    // if(setjmp(buffer1) == 0){
-    //     thread t1;
-    //     thread_create(&t1,NULL,sigroutine,NULL);
-    //     ret = thread_kill(t1, SIGSTOP);
-    //     thread_join(t1,NULL);
-    // }
-    // else{
-    //     // Send a process specific signal
-    //     // thread t2;
-    //     // create(&t2,NULL,sigroutine1,NULL);
-    //     // ret = thread_kill(t2, SIGALRM);
-    //     // thread_join(t2,NULL);
-    // } 
-    // printf(GREEN"Test Passed\n"RESET);
-    thread t1;
+    printf(RED"Testing thread_kill()\n"RESET);
+    spin_t lock;
+    spin_init(&lock);
+    thread t1,t2,t3;
+    printf("Sending a signal to a running thread\n");
     thread_create(&t1,NULL,sigroutine,NULL);
+    sleep(1);
+    spin_acquire(&lock);
     int ret = thread_kill(t1, SIGTERM);
-    // log_trace("%d",ret);
-    // void *retVal = malloc(sizeof(int));
-    // log_trace("%x %x",retVal, &retVal);
+    spin_release(&lock);
     thread_join(t1, NULL);
-    // printf("%d",*(int *)retVal);
+    if(ret != -1){
+        printf(GREEN"Test passed\n"RESET);
+    }
+    else{
+        printf(RED"Test failed\n"RESET);
+    }
+
+    printf("\nSending a signal to an already exited thread\n");
+    thread_create(&t2,NULL,sigroutine,NULL);
+    thread_join(t2, NULL);
+    ret = thread_kill(t2, SIGTERM);
+    if(ret == -1){
+        printf(GREEN"Test passed\n"RESET);
+    }
+    else{
+        printf(RED"Test failed\n"RESET);
+    }
+
+    printf("\nSending a process wide signal\n");
+    thread_create(&t3,NULL,sigroutine,NULL);
+    thread_join(t3, NULL);
+    ret = thread_kill(t3, SIGINT);
 }
 
 
@@ -265,20 +275,22 @@ void testLock(){
  */
 int main(int argc,char *argv[]){
     setbuf(stdout, NULL);
-    testCreate();
+    signal(SIGINT,globalhandle);
+    // testCreate();
     // LINE;
     // if(setjmp(buffer) == 0)
     //     testStack();
     // else{
     //     printf(GREEN"Test Passed\n"RESET);
     // }
-    LINE;
-    testJoin();
-    LINE;
+    // LINE;
+    // testJoin();
+    // LINE;
     testExit();
-    LINE;
-    testAttr();
+    // LINE;
+    // testAttr();
     // testLock();
+    // LINE;
     // testSig();
     return 0;
 }

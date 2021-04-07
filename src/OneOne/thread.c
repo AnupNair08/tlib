@@ -186,7 +186,7 @@ int thread_kill(pid_t tid, int signum){
        ret = syscall(TGKILL, pid, gettid(), signum);
        if(ret == -1){
         perror("tgkill");
-        return errno;
+        return ret;
         }
         return ret;
     }
@@ -194,7 +194,7 @@ int thread_kill(pid_t tid, int signum){
     ret = syscall(TGKILL, pid, tid, signum);
     if(ret == -1){
         perror("tgkill");
-        return errno;
+        return ret;
     }
     return ret;
 }

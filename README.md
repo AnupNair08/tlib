@@ -77,5 +77,16 @@ Note that the attributes object should be initialized before use and should be p
 
 ## Signal Handling
 
+tlib uses two types of signal dispositions.
+- Process wide signals: SIGINT, SIGCONT, SIGSTOP
+	These signals are sent to all the threads running as a part of the process. The action will be asynchronous and hence all the threads will be sent the respective signal.
+- Thread specific signals: SIGSEGV, SIGTERM, SIGABRT, SIGFPE
+	These signals are delivered to only specific signals and there are custom handlers to handle the delivery of the signals. These signals are synchronous hence they wont have affect on any other threads that run in the process group.
+
+## Scheduling policies
+
+The One One implementation of tlib uses a System Contention Scope for scheduling whereas the Many One implementation uses the Process Contention Scope for scheduling. The Process Context Scope is a simple Round Robin based scheduling on either a preemptive or a non preemptive basis. The processes yeild to a CPU when they exit or move to a waiting queue. Also the processes can be moved to the ready queue when the timer interrupt occurs.
+
+
 ## References
 <a href="https://github.com/rxi/log.c">Logging Library</a>
