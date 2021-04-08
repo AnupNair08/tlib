@@ -64,7 +64,7 @@ static void setSignals(){
     sigdelset(&__signalList,SIGINT);
     sigdelset(&__signalList,SIGSTOP);
     sigdelset(&__signalList,SIGCONT);
-    sigdelset(&__signalList,SIGALRM);
+    sigdelset(&__signalList,SIGVTALRM);
     sigprocmask(SIG_BLOCK,&__signalList,NULL);
 }
 
@@ -75,11 +75,11 @@ static void setSignals(){
  */
 static void starttimer(){
     struct itimerval it_val;
-    it_val.it_interval.tv_sec = 1;
-    it_val.it_interval.tv_usec = 0;
-    it_val.it_value.tv_sec = 1;
-    it_val.it_value.tv_usec = 0;
-    if (setitimer(ITIMER_REAL, &it_val, NULL) == -1) {
+    it_val.it_interval.tv_sec = 0;
+    it_val.it_interval.tv_usec = 2;
+    it_val.it_value.tv_sec = 0;
+    it_val.it_value.tv_usec = 2;
+    if (setitimer(ITIMER_VIRTUAL, &it_val, NULL) == -1) {
         perror("setitimer");
         exit(1);
     }
@@ -92,7 +92,7 @@ static void starttimer(){
  * @return void
  */
 void enabletimer(){
-    if(signal(SIGALRM, switchToScheduler) == SIG_ERR){
+    if(signal(SIGVTALRM, switchToScheduler) == SIG_ERR){
         perror("Timer ");
         exit(EXIT_FAILURE); 
     };
@@ -105,7 +105,7 @@ void enabletimer(){
  * @return void
  */
 void disabletimer(){
-    if(signal(SIGALRM,SIG_IGN) == SIG_ERR){
+    if(signal(SIGVTALRM,SIG_IGN) == SIG_ERR){
         perror("Timer ");
         exit(EXIT_FAILURE);
     };
@@ -169,7 +169,7 @@ static void scheduler(){
         tcb* __prev = __curproc;
         __curproc = next;
         next->thread_state = RUNNING;
-        log_trace("Scheduler: switching from %d to %d", __prev->tid, next->tid);
+        // log_trace("Scheduler: switching from %d to %d", __prev->tid, next->tid);
         if(setcontext(next->context) == -1){
             perror("Context Switch: ");
             exit(EXIT_FAILURE);
@@ -178,7 +178,7 @@ static void scheduler(){
     else{
         __curproc = next;
         next->thread_state = RUNNING;
-        log_trace("Scheduler: switching from deleted to %d", next->tid);
+        // log_trace("Scheduler: switching from deleted to %d", next->tid);
         if(setcontext(next->context) == -1){
             perror("Context Switch: ");
             exit(EXIT_FAILURE);
@@ -296,6 +296,7 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
     // Add the thread to list of runnable threads
     addThread(&__allThreads,temp);
     *t = temp->tid;
+    log_trace("Created thread %d",*t);
     // Start the timer for the main thread
     enabletimer();
     return 0;
@@ -356,4 +357,13 @@ int thread_kill(pid_t t, int signum){
         temp->pendingSig[temp->numPendingSig - 1] = signum;
     }
     enabletimer();
+}
+
+int thread_exit(void *retVal){
+    disabletimer();
+    log_trace("Exiting thread %d",__curproc->tid);
+    exited = (int*)realloc(exited, (++numExited)*sizeof(int));
+    exited[numExited-1] = __curproc->tid;
+    switchToScheduler(); 
+    // enabletimer();
 }

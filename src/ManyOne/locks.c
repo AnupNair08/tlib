@@ -33,20 +33,20 @@ int mutex_init(mut_t *lock){
 }
 
 int mutex_acquire(mut_t *lock){
-    // disabletimer();
+    disabletimer();
     if(!atomic_compare_exchange_strong(lock,&unlocked,1)){
         // log_trace("Waiting for lock");
         __curproc->mutexWait = lock;
         __curproc->thread_state = WAITING;
         switchToScheduler();
     }
-    // enabletimer();
+    enabletimer();
 }
 
 int mutex_release(mut_t *lock){
-    // disabletimer();
+    disabletimer();
     atomic_compare_exchange_strong(lock,&locked,0);
     unlockMutex(&__allThreads, lock);
-    // enabletimer();
+    enabletimer();
     // log_trace("Lock released");
 }
