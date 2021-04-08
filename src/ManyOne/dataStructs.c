@@ -210,15 +210,15 @@ void unlockMutex(tcbQueue *t, mut_t* lock){
         if(tmp->tcbnode->mutexWait == lock){
             tmp->tcbnode->mutexWait = NULL;
             tmp->tcbnode->thread_state = RUNNABLE;
-            // requeue = (tcb**)realloc(requeue, ++numRequeue);
-            // requeue[numRequeue-1] = tmp->tcbnode;
+            requeue = (tcb**)realloc(requeue, ++numRequeue);
+            requeue[numRequeue-1] = tmp->tcbnode;
         }
         tmp = tmp->next;
     }
-    // for(int i = 0; i < numRequeue; i++){
-    //     reQueue(t, requeue[i]);
-    // }
-    // free(requeue);
+    for(int i = 0; i < numRequeue; i++){
+        reQueue(t, requeue[i]);
+    }
+    free(requeue);
     return;
 }
 
