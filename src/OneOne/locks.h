@@ -8,14 +8,13 @@
  * @copyright Copyright (c) 2021
  * 
  */
-#include <stdatomic.h>
 
 /**
  * @brief Atomic Lock Object
  * 
  */
-typedef volatile atomic_flag spin_t;
-typedef volatile atomic_int mutex_t;
+typedef volatile int spin_t;
+typedef volatile int mutex_t;
 // Spin Lock related functions
 int spin_init(spin_t*);
 int spin_acquire(spin_t *);

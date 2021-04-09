@@ -9,7 +9,6 @@
  * 
  */
 #define _GNU_SOURCE
-#include<stdatomic.h>
 #include<unistd.h>
 /**
  * @brief Thread object
@@ -18,7 +17,7 @@ typedef unsigned long int thread;
 /**
  * @brief Lock Object
  */
-typedef volatile atomic_flag spin_t;
+typedef volatile int spin_t;
 /**
  * @brief Attribute Object for threads 
  */
@@ -39,7 +38,7 @@ int spin_init(spin_t*);
 int spin_acquire(spin_t*);
 int spin_release(spin_t*);
 
-typedef volatile atomic_int mutex_t;
+typedef volatile int mutex_t;
 // Mutex related APIs
 int mutex_init(mutex_t *);
 int mutex_acquire(mutex_t *);

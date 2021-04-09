@@ -91,7 +91,7 @@ int testMutex(){
     thread_join(t1,NULL);
     thread_join(t2,NULL);
     log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n",c1+c2,c);
-    if(c1 + c2 - c > 2) printf(RED"Test failed\n"RESET);
+    if(c1 + c2 != c) printf(RED"Test failed\n"RESET);
     else printf(GREEN"Test passed\n"RESET);
     return 0;
 }
@@ -127,7 +127,7 @@ int testSpin(){
     thread_join(t1,NULL);
     thread_join(t2,NULL);
     log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n",c1+c2,c);
-    if(c1 + c2 - c > 2) printf(RED"Test failed\n"RESET);
+    if(c1 + c2 != c) printf(RED"Test failed\n"RESET);
     else printf(GREEN"Test passed\n"RESET);
     return 0;
 }

@@ -2,7 +2,6 @@
 #include <linux/futex.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdatomic.h>
 #include <assert.h>
 #include <asm/prctl.h>
 #include <sys/prctl.h>
@@ -17,7 +16,9 @@
  */
 int spin_init(spin_t* lock){
     // log_debug("Lock initialzed");
-    *lock = (volatile spin_t)ATOMIC_FLAG_INIT;
+    asm (
+       "movl $0x0,8(%rdi);"
+    );
     return 0;
 }
 
@@ -29,9 +30,13 @@ int spin_init(spin_t* lock){
  */
 int spin_acquire(spin_t *lock){
     // Atomically busy wait until the lock becomes available
-    while(atomic_flag_test_and_set(lock)){
-        // log_trace("Waiting for lock");
-    };
+    asm(
+        "whileloop:"
+        "mov    $1, %eax;"
+        "xchg   %al, (%rdi);"
+        "test %al,%al;"
+        "jne whileloop;"
+    );
     return 0;
 }
 
@@ -42,12 +47,11 @@ int spin_acquire(spin_t *lock){
  * @return int 
  */
 int spin_release(spin_t *lock){
-    atomic_flag_clear(lock);
+    asm(
+        "movl $0x0,(%rdi);"
+    );
     return 0;
 }
-
-atomic_int unlocked;
-atomic_int locked;
 
 /**
  * @brief Initialize the mutex lock object 
@@ -56,9 +60,9 @@ atomic_int locked;
  * @return int 
  */
 int mutex_init(mutex_t *lock){
-    atomic_init(lock,0);
-    atomic_init(&unlocked,0);
-    atomic_init(&locked,1);
+    asm(
+        "movl $0x0,(%rdi);"
+    );  
     return 0;
 }
 
@@ -70,9 +74,20 @@ int mutex_init(mutex_t *lock){
  * @return int 
  */
 int mutex_acquire(mutex_t *lock){
-    while(!atomic_compare_exchange_strong(lock,&unlocked,1)){
-        syscall(SYS_futex , lock, FUTEX_WAIT, 1, NULL, NULL, 0);
-    }
+    asm(
+        "mutexloop:"
+        "mov    $1, %eax;"
+        "xchg   %al, (%rdi);"
+        "test %al,%al;" 
+        "je endlabel"
+    );  
+    syscall(SYS_futex , lock, FUTEX_WAIT, 1, NULL, NULL, 0);
+    asm(
+        "jmp mutexloop"
+    );
+    asm(
+        "endlabel:"
+    );
     return 0;
 }
 
@@ -84,7 +99,9 @@ int mutex_acquire(mutex_t *lock){
  * @return int 
  */
 int mutex_release(mutex_t *lock){
-    atomic_compare_exchange_strong(lock,&locked,0);
+    asm(
+        "movl $0x0,(%rdi);"
+    );
     syscall(SYS_futex , lock, FUTEX_WAKE, 1, NULL, NULL, 0);
     return 0;
 }
