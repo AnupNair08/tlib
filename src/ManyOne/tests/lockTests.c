@@ -127,8 +127,8 @@ int testSpin(){
     thread_create(&t2,NULL,f2spin,(void *)&spinlock);
     while(c<10){}
     run = 0;
-    thread_join(t2, NULL);
     thread_join(t1, NULL);
+    thread_join(t2, NULL);
     log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n",c1+c2,c);
     if(c1 + c2 - c > 2) printf(RED"Test failed\n"RESET);
     else printf(GREEN"Test passed\n"RESET);

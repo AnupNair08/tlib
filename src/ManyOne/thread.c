@@ -75,10 +75,10 @@ static void setSignals(){
  */
 static void starttimer(){
     struct itimerval it_val;
-    it_val.it_interval.tv_sec = 0;
-    it_val.it_interval.tv_usec = 2;
-    it_val.it_value.tv_sec = 0;
-    it_val.it_value.tv_usec = 2;
+    it_val.it_interval.tv_sec = 1;
+    it_val.it_interval.tv_usec = 0;
+    it_val.it_value.tv_sec = 1;
+    it_val.it_value.tv_usec = 0;
     if (setitimer(ITIMER_VIRTUAL, &it_val, NULL) == -1) {
         perror("setitimer");
         exit(1);
