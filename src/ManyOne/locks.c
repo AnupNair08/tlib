@@ -8,7 +8,7 @@ extern mut_t globallock;
 int spin_init(spin_t* lock){
     printf("Lock init\n");
      asm (
-       "movl $0x0,8(%rdi);"
+       "movl $0x0,(%rdi);"
     );
     return 0;
 }
