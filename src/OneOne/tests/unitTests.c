@@ -186,9 +186,7 @@ void testSig(){
     printf("Sending a signal to a running thread\n");
     thread_create(&t1,NULL,sigroutine,NULL);
     sleep(1);
-    spin_acquire(&lock);
     int ret = thread_kill(t1, SIGTERM);
-    spin_release(&lock);
     thread_join(t1, NULL);
     if(ret != -1){
         printf(GREEN"Test passed\n"RESET);
