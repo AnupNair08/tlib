@@ -15,7 +15,6 @@
 #include <sys/types.h>
 #include <sys/syscall.h>
 #include <limits.h>
-#include <ucontext.h>
 #include "tlib.h"
 #include "utils.h"
 #include "log.h"

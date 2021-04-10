@@ -1,8 +1,7 @@
 #include<stdlib.h>
 #include<unistd.h>
-#include<ucontext.h>
-#include "locks.h"
 #include<setjmp.h>
+#include "locks.h"
 
 typedef unsigned long thread;
 typedef struct funcargs{
@@ -20,7 +19,6 @@ typedef struct tcb {
     size_t stack_sz;
     int thread_state;
     sigjmp_buf *ctx;
-    ucontext_t* context;
     //indicate if the process has exited or not
     int exited;
     //list of all waiters on this process
@@ -67,4 +65,4 @@ void queueRunning(tcbQueue *);
 int removeThread(tcbQueue *, unsigned long int);
 void reQueue(tcbQueue *, tcb *);
 void unlockMutex(tcbQueue *, mut_t*);
-void initTcb(tcb *, int, thread, ucontext_t*,sigjmp_buf *);
+void initTcb(tcb *, int, thread,sigjmp_buf *);

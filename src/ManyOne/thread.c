@@ -21,12 +21,11 @@
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <limits.h>
-#include <ucontext.h>
+#include <setjmp.h>
 #include "attributetypes.h"
 #include "log.h"
 #include "tlib.h"
 #include "sighandler.h"
-#include <setjmp.h>
 tcb* __curproc = NULL;
 tcb* __scheduler = NULL;
 tcb* __mainproc = NULL;
@@ -172,11 +171,6 @@ void switchContext(sigjmp_buf *old, sigjmp_buf *new){
  */
 void switchToScheduler(){
     switchContext(__curproc->ctx,__scheduler->ctx);
-    // if(swapcontext(__curproc->context, __scheduler->context) == -1){
-    //     perror("Context switch");
-    //     exit(EXIT_FAILURE); 
-    // }
-    
     log_trace("%d Returned here", __curproc->tid);
     raiseSignals();
     enabletimer();
@@ -217,21 +211,11 @@ static void scheduler(){
         tcb* __prev = __curproc;
         __curproc = next;
         next->thread_state = RUNNING;
-        // log_trace("Scheduler: switching from %d to %d", __prev->tid, next->tid);
-        // if(setcontext(next->context) == -1){
-        //     perror("Context Switch: ");
-        //     exit(EXIT_FAILURE);
-        // }
         setContext(next->ctx);
     }
     else{
         __curproc = next;
         next->thread_state = RUNNING;
-        // log_trace("Scheduler: switching from deleted to %d", next->tid);
-        // if(setcontext(next->context) == -1){
-        //     perror("Context Switch: ");
-        //     exit(EXIT_FAILURE);
-        // }
         setContext(next->ctx);
     }
     
@@ -243,20 +227,20 @@ static void scheduler(){
  */
 static void initManyOne(){
     log_info("Library initialized");
+
     spin_init(&globallock);
     setSignals();    
+    
     __allThreads.back = NULL;
     __allThreads.front = NULL;
     __allThreads.len = 0;
     
     __mainproc = (tcb*)malloc(sizeof(tcb));
-    ucontext_t* thread_context = (ucontext_t *)malloc(sizeof(ucontext_t));
     sigjmp_buf *ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
     // Main's context (has default stack and PC)
     createContext(ctx,NULL);
     //    
-    // getcontext(thread_context);
-    initTcb(__mainproc, RUNNING, getpid(), thread_context,ctx);
+    initTcb(__mainproc, RUNNING, getpid(),ctx);
     
     __curproc = __mainproc;
     
@@ -264,20 +248,13 @@ static void initManyOne(){
     addThread(&__allThreads,__mainproc);
     
     __scheduler = (tcb*)malloc(sizeof(tcb));
-    thread_context = (ucontext_t *)malloc(sizeof(ucontext_t));
     ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
     // Schedulers context (has a new stack and PC)
     createContext(ctx,scheduler);
     //
-    // getcontext(thread_context);
-    
-
-    thread_context->uc_stack.ss_sp = allocStack(STACK_SZ,0);
-    thread_context->uc_stack.ss_size = STACK_SZ;
-    thread_context->uc_link = __mainproc->context;
     
     // makecontext(thread_context, scheduler, 0);
-    initTcb(__scheduler, RUNNING, 0, thread_context,ctx);
+    initTcb(__scheduler, RUNNING, 0,ctx);
 
     starttimer();
 }
@@ -322,14 +299,10 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
         initManyOne();
         isInit = 1;
     }
-    ucontext_t *thread_context = (ucontext_t *)malloc(sizeof(ucontext_t));
     sigjmp_buf *ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
 
     // Allocate a new TCB and set all fields
     tcb *temp = (tcb *)malloc(sizeof(tcb));
-    // Context of new thread (with new stack and PC)
-    //
-    // getcontext(thread_context);
     
     funcargs* fa = (funcargs*)malloc(sizeof(funcargs));
     fa->f = routine;
@@ -337,35 +310,25 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
     createContext(ctx,wrapRoutine);
 
     temp->args = fa;
-    // Context of thread is modified to accepts timer interrupts
     if(attr){
         if(((thread_attr *)attr)->stack){
-            thread_context->uc_stack.ss_sp = ((thread_attr *)attr)->stack;
-            thread_context->uc_stack.ss_size = ((thread_attr *)attr)->stackSize;
-            ctx[0]->__jmpbuf[6] = (long)(((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
+            ctx[0]->__jmpbuf[JB_SP] = translate_address((address_t)((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
         }
         else if(((thread_attr *)attr)->stackSize){
             temp->stack = allocStack(((thread_attr *)attr)->stackSize,0);
-            thread_context->uc_stack.ss_sp = temp->stack;
-            thread_context->uc_stack.ss_size = ((thread_attr *)attr)->stackSize;
-            ctx[0]->__jmpbuf[6] = (long)(temp->stack + ((thread_attr *)attr)->stackSize);
+            ctx[0]->__jmpbuf[JB_SP] = (long)(temp->stack + ((thread_attr *)attr)->stackSize);
         }
     }
     else{
-        // thread_context->uc_stack.ss_sp = attr != NULL ? allocStack(STACK_SZ,0) : allocStack(((thread_attr *)attr)->stackSize,0);
-        temp->stack = allocStack(STACK_SZ,0);
-        thread_context->uc_stack.ss_sp = temp->stack;
-        thread_context->uc_stack.ss_size = STACK_SZ;
+        // temp->stack = ctx[0]->__jmpbuf[JB_SP];
     }
-    thread_context->uc_link = __mainproc->context;
 
-    // makecontext(thread_context,(void*)&wrapRoutine,1,(void *)(fa));
-    initTcb(temp, RUNNABLE, __nextpid++, thread_context,ctx);
+    initTcb(temp, RUNNABLE, __nextpid++,ctx);
     // Add the thread to list of runnable threads
     addThread(&__allThreads,temp);
     *t = temp->tid;
     sigsetjmp(*__mainproc->ctx,1);
-    // Start the timer for the main thread
+    
     enabletimer();
     return 0;
 }
@@ -378,7 +341,6 @@ int thread_create(thread *t, void *attr, void *routine, void *arg){
  * @return int
  */
 int thread_join(thread t, void **retLocation){
-    // log_info("trying to join thread %d\n", t);
     disabletimer();
     tcb* waitedThread = getThread(&__allThreads, t);
     if(waitedThread == NULL){
@@ -396,8 +358,10 @@ int thread_join(thread t, void **retLocation){
     waitedThread->waiters = (int*)realloc(waitedThread->waiters, (++(waitedThread->numWaiters))*sizeof(int));
     waitedThread->waiters[waitedThread->numWaiters-1] = __curproc->tid;
     __curproc->thread_state = WAITING;
+    
     switchToScheduler();
     if(retLocation) *retLocation = (void *)0;
+    
     return 0;
 }
 

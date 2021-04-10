@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "tests.h"
-#include "../attributetypes.h"
 #include <signal.h>
 #include <setjmp.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include "../attributetypes.h"
 #include "../log.h"
 #include "../thread.h"
 

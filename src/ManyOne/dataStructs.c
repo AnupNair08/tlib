@@ -43,7 +43,6 @@ int removeThread(tcbQueue *t, unsigned long int tid){
             t->back = NULL;
         }
         // free(stack);
-        free(tmp->tcbnode->context);
         free(tmp->tcbnode->waiters);
         free(tmp->tcbnode);
         free(tmp);
@@ -63,7 +62,6 @@ int removeThread(tcbQueue *t, unsigned long int tid){
                 }
                 tmp->next = delNode->next;
                 // free(stack);
-                free(delNode->tcbnode->context);
                 free(delNode->tcbnode->waiters);
                 free(delNode->tcbnode);
                 free(delNode);
@@ -222,7 +220,7 @@ void unlockMutex(tcbQueue *t, mut_t* lock){
     return;
 }
 
-void initTcb(tcb *t, int initState, thread tid, ucontext_t* context, sigjmp_buf *ctx){
+void initTcb(tcb *t, int initState, thread tid, sigjmp_buf *ctx){
     t->thread_state = initState;
     t->tid = tid;
     t->exited = 0;
@@ -231,7 +229,6 @@ void initTcb(tcb *t, int initState, thread tid, ucontext_t* context, sigjmp_buf 
     t->numPendingSig = 0;
     t->pendingSig = NULL;
     t->mutexWait = NULL;
-    t->context = context;
     t->ctx = ctx;
     t->stack = NULL;
 }
