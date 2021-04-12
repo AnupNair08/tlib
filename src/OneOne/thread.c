@@ -20,9 +20,20 @@
 #include "log.h"
 #include "locks.h"
 #include "sighandler.h"
-
 spin_t globalLock;
 singlyLL __tidList;
+
+
+void cleanup(){
+    node *tmp = __tidList.head;
+    while(tmp){    
+        // singlyLLDelete(&__tidList,tmp->tidCpy);
+        log_trace("%x",tmp->fa);
+        tmp = tmp->next;
+    }
+    log_trace("Handled cleaner");
+
+}
 
 /**
  * @brief Library initialzer
@@ -32,7 +43,6 @@ static void init(){
     log_info("Library initialised\n");
     fflush(stdout);
     spin_init(&globalLock);
-
     sigset_t signalMask;
     sigfillset(&signalMask);
     sigdelset(&signalMask,SIGINT);
@@ -49,6 +59,7 @@ static void init(){
         return;
     }
     insertedNode->tidCpy = getpid();
+    atexit(cleanup);
 }
 
 /**
@@ -89,7 +100,8 @@ static int wrap(void *fa){
     // free(temp->stack);
     register int i asm("eax");
     int regval = i;
-    temp->insertedNode->retVal = (void *)&regval;
+    // temp->insertedNode->retVal = (void *)&regval;
+    thread_exit(NULL);
     // log_trace("Thread exited with return value %d", regval);
 }
 
@@ -120,14 +132,14 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
         log_error("Thread address not found");
         return -1;
     }
-    funcargs *fa = (funcargs *)malloc(sizeof(funcargs));
+    funcargs *fa;
+    fa = (funcargs *)malloc(sizeof(funcargs));
     if(!fa){
         log_error("Malloc failed");
         return -1;
     }
     fa->f = routine;
     fa->arg = arg;
-    fa->insertedNode = insertedNode;
     if(attr){
         thread_attr *attr_t = (thread_attr *)attr;
         thread_stack = attr_t->stack == NULL ? allocStack(attr_t->stackSize, attr_t->guardSize) : attr_t->stack ;
@@ -135,7 +147,7 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
-        fa->stack = thread_stack;
+        fa->stack = attr_t->stack ? NULL : thread_stack;
         tid = clone(wrap,
                     thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
                     CLONE_FLAGS,
@@ -145,6 +157,7 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
                     &(insertedNode->tid));
         spin_acquire(&globalLock);
         insertedNode->tidCpy = tid;
+        insertedNode->fa = fa;
         spin_release(&globalLock);
     }
     else{
@@ -163,6 +176,7 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
                     &(insertedNode->tid));
         spin_acquire(&globalLock);
         insertedNode->tidCpy = tid;
+        insertedNode->fa = fa;
         spin_release(&globalLock);
     }
     if(tid == -1){
@@ -246,15 +260,14 @@ int thread_join(thread t, void **retLocation){
 void thread_exit(void *ret){
     void *addr = returnCustomTidAddress(&__tidList, gettid());
     if(addr == NULL){
-        log_info("Thread already exited");
+        // log_info("Thread already exited");
         return;
     }
     if(ret){
         ret = getReturnValue(&__tidList, gettid());
     }
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-    singlyLLDelete(&__tidList, gettid());
+    // singlyLLDelete(&__tidList, gettid());
     kill(SIGINT,gettid());
-
     return;
 }

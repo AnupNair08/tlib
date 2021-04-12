@@ -8,6 +8,15 @@
  * @copyright Copyright (c) 2021
  * 
  */
+/**
+ * @brief Arguments passed to the wrapper function
+ * 
+ */
+typedef struct funcargs{
+    void (*f)(void *);
+    void* arg;
+    void *stack;
+} funcargs;
 
 /**
  * @brief Node in the TCB of the thread
@@ -18,6 +27,7 @@ typedef struct node{
     unsigned long int tidCpy;
     void* retVal;
     struct node* next;
+    funcargs *fa;
 } node;
 
 /**
@@ -29,16 +39,6 @@ typedef struct singlyLL{
     node *tail;
 } singlyLL;
 
-/**
- * @brief Arguments passed to the wrapper function
- * 
- */
-typedef struct funcargs{
-    void (*f)(void *);
-    void* arg;
-    node* insertedNode;
-    void *stack;
-} funcargs;
 
 // Linked List related operations
 

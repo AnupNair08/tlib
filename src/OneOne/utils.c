@@ -81,6 +81,9 @@ int singlyLLDelete(singlyLL *ll, unsigned long int tid)
     if (tmp->tidCpy == tid)
     {
         ll->head = ll->head->next;
+        if(tmp->fa->stack)
+        free(tmp->fa->stack);
+        free(tmp->fa);
         free(tmp);
         if (ll->head == NULL)
         {
@@ -97,6 +100,9 @@ int singlyLLDelete(singlyLL *ll, unsigned long int tid)
             {
                 ll->tail = tmp;
             }
+            if(tmp->next->fa->stack)
+            free(tmp->next->fa->stack);
+            free(tmp->next->fa);
             free(tmp->next);
             tmp->next = tmpNext;
             break;
