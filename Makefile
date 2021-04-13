@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -g -DLOG_USE_COLOR 
+CFLAGS := -g -DLOG_USE_COLOR -ggdb3
 SUBDIRS := doxygen bin bin/ManyOne bin/OneOne
 SRCMANYONE := src/ManyOne/*.c
 SRCONEONE := src/OneOne/*.c
@@ -45,7 +45,10 @@ alltest: $(TESTSMANYONE) $(TESTSONEONE) $(SRCMANYONE) $(SRCONEONE)
 	$(CC) readers.o $(OBJONEONE) -o readers
 	@mv *.o unitTests lockTests matrix readers $(BINONEONE)
 	
-	
+check-leak:
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes  --verbose \
+	--log-file=leak-summary.txt  ./${BINONEONE}/unitTests
+
 clean:
 	@rm $(BINMANYONE)*.o
 	@rm $(BINONEONE)*.o

@@ -28,11 +28,9 @@ void cleanup(){
     node *tmp = __tidList.head;
     while(tmp){    
         // singlyLLDelete(&__tidList,tmp->tidCpy);
-        log_trace("%x",tmp->fa);
         tmp = tmp->next;
     }
-    log_trace("Handled cleaner");
-
+    free(__tidList.head);
 }
 
 /**
@@ -147,7 +145,7 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
             perror("tlib create");
             return errno;
         }
-        fa->stack = attr_t->stack ? NULL : thread_stack;
+        fa->stack = attr_t->stack == NULL ? thread_stack : attr_t->stack;
         tid = clone(wrap,
                     thread_stack + ((thread_attr *)attr)->stackSize + ((thread_attr *)attr)->guardSize, 
                     CLONE_FLAGS,

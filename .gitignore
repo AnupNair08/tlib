@@ -5,3 +5,4 @@ tout
 resources/
 .vscode
 bin/
+leak-summary.txt

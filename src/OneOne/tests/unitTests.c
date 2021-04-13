@@ -234,23 +234,21 @@ void testAttr(){
     printf(BLUE"Testing thread_attr_*()\n"RESET);
     short err = 0; 
     thread t1;
-    // void *newstack = malloc(TEST_STSZ/2);
-    thread_attr a;
-    thread_attr_init(&a);
-    thread_attr_setStack(&a,TEST_STSZ) == -1 ? log_error("Failed to set new stack size"),err=1 : log_info("Stack size changed");
-    thread_attr_setGuard(&a,TEST_GDSZ)  == -1 ? log_error("Failed to set new guard page size"),err=1 : log_info("Guard page size changed");
-    thread_attr_getStack(&a) != TEST_STSZ ? log_error("Stack size does not match"),err=1 : log_info("Set stack size to %d",TEST_STSZ);
+    thread_attr *a = (thread_attr *)malloc(sizeof(thread_attr));
+    thread_attr_init(a);
+    thread_attr_setStack(a,TEST_STSZ) == -1 ? log_error("Failed to set new stack size"),err=1 : log_info("Stack size changed");
+    thread_attr_setGuard(a,TEST_GDSZ)  == -1 ? log_error("Failed to set new guard page size"),err=1 : log_info("Guard page size changed");
+    thread_attr_getStack(a) != TEST_STSZ ? log_error("Stack size does not match"),err=1 : log_info("Set stack size to %d",TEST_STSZ);
 
-    // thread_attr_setStackAddr(&a,newstack,TEST_STSZ/2)  == -1 ? log_error("Failed to set new stack"),err=1 : log_info("Stack changed");  
-    thread_attr_getGuard(&a) != TEST_GDSZ ? log_error("Guard page size does not match"),err=1 : log_info("Set guard page size to %d",TEST_GDSZ);
+    thread_attr_getGuard(a) != TEST_GDSZ ? log_error("Guard page size does not match"),err=1 : log_info("Set guard page size to %d",TEST_GDSZ);
     if(err){
         printf(RED"Test failed"RESET);
         failure += 1;
         return;
     }
-    thread_create(&t1,&a,attrroutine,NULL);
+    thread_create(&t1,a,attrroutine,NULL);
     thread_join(t1,NULL);
-    thread_attr_destroy(&a);
+    thread_attr_destroy(a);
     printf(GREEN"Test Passed\n"RESET);
     success += 1;
     return;
