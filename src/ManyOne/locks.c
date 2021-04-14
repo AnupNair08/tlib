@@ -1,57 +1,65 @@
 #include "tlib.h"
 
-extern tcb *__curproc;
-extern tcb *__scheduler;
+extern tcb* __curproc;
+extern tcb* __scheduler;
 extern tcbQueue __allThreads;
 extern mut_t globallock;
 
-int spin_init(spin_t *lock)
-{
-    printf("Lock init\n");
-    asm(
-        "movl $0x0,(%rdi);");
+int spin_init(spin_t* lock){
+    volatile int outval; 
+    asm (
+       "movl $0x0,(%1);"
+       :"=r" (outval)
+       :"r"( lock)
+    );
     return 0;
 }
-int spin_acquire(spin_t *lock)
-{
+int spin_acquire(spin_t *lock){
+    int outval;
     asm(
         "whileloop:"
-        "mov    $1, %eax;"
-        "xchg   %al, (%rdi);"
-        "test %al,%al;"
-        "jne whileloop;");
+        "xchg   %%al, (%1);"
+        "test   %%al,%%al;"
+        "jne whileloop;"
+        :"=r" (outval)
+        :"r"(lock)
+    );
     return 0;
 }
 
-int spin_release(spin_t *lock)
-{
+int spin_release(spin_t *lock){
+    int outval;
     asm(
-        "movl $0x0,(%rdi);");
+        "movl $0x0,(%1);"
+        : "=r" (outval)
+        : "r" (lock)
+        );
     return 0;
 }
-
-atomic_int unlocked;
-atomic_int locked;
 
 int mutex_init(mut_t *lock)
 {
-    // atomic_init(lock,0);
+    int outval;
     asm(
-        "movl $0x0,(%rdi);");
-    // atomic_init(&unlocked,0);
-    // atomic_init(&locked,1);
+        "movl $0x0,(%1);"
+        : "=r" (outval)
+        : "r" (lock)
+        );
     return 0;
 }
 
 int mutex_acquire(mut_t *lock)
 {
+    volatile int outval ;
+    asm (
+        "xchg   %%al,(%1);"
+        "test   %%al, %%al;"
+        "je endlabel;"
+         : "=r" ( outval )        
+         : "r" ( lock )         
+         : "%ebx"         
+     );
     disabletimer();
-    asm(
-        "movl   $1, %eax;"
-        "xchg   %al, (%rdi);"
-        "test   %al,%al;"
-        "je endlabel");
-    log_trace("Waiting for lock");
     __curproc->mutexWait = lock;
     __curproc->thread_state = WAITING;
     switchToScheduler();
@@ -63,10 +71,12 @@ int mutex_acquire(mut_t *lock)
 int mutex_release(mut_t *lock)
 {
     disabletimer();
-    // atomic_compare_exchange_strong(lock,&locked,0);
+    int outval;
     asm(
-        "movl $0x0,(%rdi);");
+        "movl $0x0,(%1);"
+        : "=r" (outval)
+        : "r" (lock)
+        );
     unlockMutex(&__allThreads, lock);
     enabletimer();
-    // log_trace("Lock released");
 }

@@ -16,8 +16,11 @@
  */
 int spin_init(spin_t* lock){
     // log_debug("Lock initialzed");
+    volatile int outval;
     asm (
-       "movl $0x0,8(%rdi);"
+       "movl $0x0,(%1);"
+       :"=r"(outval)
+       :"r"(lock)
     );
     return 0;
 }
@@ -30,12 +33,14 @@ int spin_init(spin_t* lock){
  */
 int spin_acquire(spin_t *lock){
     // Atomically busy wait until the lock becomes available
+    volatile int outval;
     asm(
         "whileloop:"
-        "mov    $1, %eax;"
-        "xchg   %al, (%rdi);"
-        "test %al,%al;"
+        "xchg   %%al, (%1);"
+        "test %%al,%%al;"
         "jne whileloop;"
+        :"=r"(outval)
+        :"r"(lock)
     );
     return 0;
 }
@@ -47,8 +52,11 @@ int spin_acquire(spin_t *lock){
  * @return int 
  */
 int spin_release(spin_t *lock){
+    volatile int outval;
     asm(
-        "movl $0x0,(%rdi);"
+        "movl $0x0,(%1);"
+        :"=r"(outval)
+        :"r"(lock)
     );
     return 0;
 }
@@ -60,9 +68,12 @@ int spin_release(spin_t *lock){
  * @return int 
  */
 int mutex_init(mutex_t *lock){
-    asm(
-        "movl $0x0,(%rdi);"
-    );  
+    volatile int outval;
+    asm (
+       "movl $0x0,(%1);"
+       :"=r"(outval)
+       :"r"(lock)
+    );
     return 0;
 }
 
@@ -74,12 +85,15 @@ int mutex_init(mutex_t *lock){
  * @return int 
  */
 int mutex_acquire(mutex_t *lock){
+    volatile int outval;
     asm(
         "mutexloop:"
-        "mov    $1, %eax;"
-        "xchg   %al, (%rdi);"
-        "test %al,%al;" 
+        "mov    $1, %%eax;"
+        "xchg   %%al, (%%rdi);"
+        "test %%al,%%al;" 
         "je endlabel"
+        :"=r"(outval)
+        :"r"(lock)
     );  
     syscall(SYS_futex , lock, FUTEX_WAIT, 1, NULL, NULL, 0);
     asm(
@@ -99,8 +113,11 @@ int mutex_acquire(mutex_t *lock){
  * @return int 
  */
 int mutex_release(mutex_t *lock){
+    volatile int outval;
     asm(
-        "movl $0x0,(%rdi);"
+        "movl $0x0,(%1);"
+        :"=r"(outval)
+        :"r"(lock)
     );
     syscall(SYS_futex , lock, FUTEX_WAKE, 1, NULL, NULL, 0);
     return 0;
