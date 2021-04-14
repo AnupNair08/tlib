@@ -47,7 +47,6 @@ int spin_release(spin_t *lock)
 {
     asm(
         "movl $0x0,(%rdi);");
-    return 0;
 }
 
 int mutex_init(mut_t *lock)
