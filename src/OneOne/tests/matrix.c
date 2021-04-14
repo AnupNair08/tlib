@@ -85,6 +85,7 @@ void multiplySingle(int **mat1, int **mat2, int **res, int a, int b, int c)
 
 
 int main(int argc, char *argv[]){
+    printf(BLUE"Running benchmark test\n\n"RESET);
     int r1, r2, c1, c2, **res;
     int **arr1=NULL, **arr2=NULL;
     scanf("%d", &r1);

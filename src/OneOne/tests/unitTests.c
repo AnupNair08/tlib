@@ -53,7 +53,7 @@ void testCreate(){
     fflush(stdout);
     TotalTests += 1;
     int s = 0,f = 0;
-    printf(BLUE"Testing thread_create()\n"RESET);
+    printf(BLUE"Testing thread_create()\n\n"RESET);
     thread t[10];
     for(int i = 0 ;i < 10; i++){
         if(thread_create(&t[i],NULL,routine,(void *)&i) == 0){
@@ -149,7 +149,7 @@ void exitroutine2(void *lock){
 void testExit(){
     fflush(stdout);
     TotalTests += 1;
-    printf(BLUE"Testing thread_exit()\n"RESET);
+    printf(BLUE"Testing thread_exit()\n\n"RESET);
     thread t1,t2;
     spin_t lock;
     spin_init(&lock);
@@ -179,7 +179,7 @@ int sigroutine(){
 void testSig(){
     fflush(stdout);
     TotalTests += 3;
-    printf(BLUE"Testing thread_kill()\n"RESET);
+    printf(BLUE"Testing thread_kill()\n\n"RESET);
     spin_t lock;
     spin_init(&lock);
     thread t1,t2,t3;
@@ -231,7 +231,7 @@ void attrroutine(){
 void testAttr(){
     fflush(stdout);
     TotalTests += 1;
-    printf(BLUE"Testing thread_attr_*()\n"RESET);
+    printf(BLUE"Testing thread_attr_*()\n\n"RESET);
     short err = 0; 
     thread t1;
     thread_attr *a = (thread_attr *)malloc(sizeof(thread_attr));
@@ -274,7 +274,7 @@ void lockroutine(void *lock){
 void testLock(){
     fflush(stdout);
     TotalTests += 1;
-    printf(BLUE"Testing mutex_*()\n"RESET);
+    printf(BLUE"Testing mutex_*()\n\n"RESET);
     thread t,g;
     mutex_t lock;
     mutex_init(&lock);
@@ -301,13 +301,14 @@ void testLock(){
 int main(int argc,char *argv[]){
     setbuf(stdout, NULL);
     signal(SIGINT,globalhandle);
-    printf("\nRunning Test Suite\n");
+    printf("\nRunning Unit Tests\n");
     LINE;
     testCreate();
     LINE;
     testJoin();
     LINE;
     testAttr();
+    LINE;
     testLock();
     LINE;
     testSig();
