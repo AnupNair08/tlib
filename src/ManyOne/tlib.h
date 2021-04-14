@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <unistd.h>
-#include <ucontext.h>
+#include <setjmp.h>
 #include "locks.h"
 
 typedef unsigned long thread;
@@ -26,7 +26,7 @@ typedef struct tcb
     void *stack;
     size_t stack_sz;
     int thread_state;
-    ucontext_t *context;
+    sigjmp_buf *ctx;
     //indicate if the process has exited or not
     int exited;
     //list of all waiters on this process
@@ -36,6 +36,7 @@ typedef struct tcb
     // Implement as a queue for easy deletion
     int *pendingSig;
     int numPendingSig;
+    funcargs *args;
 } tcb;
 
 typedef struct qnode
@@ -57,7 +58,7 @@ typedef struct tcbQueue
 #define CLONE_FLAGS CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD | CLONE_SYSVSEM | CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID
 #define SCHED_INTERVAL 2000
 
-void wrapRoutine(void *);
+void wrapRoutine();
 static void *allocStack(size_t, size_t);
 static void starttimer();
 void enabletimer();
@@ -75,4 +76,4 @@ void removeExitedThreads(tcbQueue *);
 int removeThread(tcbQueue *, unsigned long int);
 void reQueue(tcbQueue *, tcb *);
 void unlockMutex(tcbQueue *, mut_t *);
-void initTcb(tcb *, int, thread, ucontext_t *);
+void initTcb(tcb *, int, thread, sigjmp_buf *);

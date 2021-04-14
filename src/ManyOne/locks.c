@@ -66,7 +66,6 @@ int mutex_acquire(mut_t *lock)
         "test %al,%al;"
         "je endlabel");
     disabletimer();
-    log_trace("Waiting for lock");
     __curproc->mutexWait = lock;
     __curproc->thread_state = WAITING;
     switchToScheduler();
@@ -77,9 +76,9 @@ int mutex_acquire(mut_t *lock)
 
 int mutex_release(mut_t *lock)
 {
-    // disabletimer();
     asm(
         "movl $0x0,(%rdi);");
+    disabletimer();
     unlockMutex(&__allThreads, lock);
     enabletimer();
     // log_trace("Lock released");

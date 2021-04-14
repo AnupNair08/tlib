@@ -21,12 +21,10 @@
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <limits.h>
-#include <ucontext.h>
 #include "attributetypes.h"
 #include "log.h"
 #include "tlib.h"
 #include "sighandler.h"
-
 tcb *__curproc = NULL;
 tcb *__scheduler = NULL;
 tcb *__mainproc = NULL;
@@ -34,6 +32,24 @@ tcbQueue __allThreads;
 spin_t globallock;
 sigset_t __signalList;
 unsigned long int __nextpid;
+
+typedef unsigned long address_t;
+#define JB_BP 5
+#define JB_SP 6
+#define JB_PC 7
+
+/* A translation is required when using an address of a variable.
+   Use this as a black box in your code. 
+   This code was referenced from : https://sites.cs.ucsb.edu/~chris/teaching/cs170/projects/proj2.html*/
+address_t translate_address(address_t addr)
+{
+    address_t ret;
+    asm volatile("xor    %%fs:0x30,%0\n"
+                 "rol    $0x11,%0\n"
+                 : "=g"(ret)
+                 : "0"(addr));
+    return ret;
+}
 
 /**
  * @brief Function to allocate a stack to Many One threads
@@ -119,6 +135,51 @@ void disabletimer()
     return;
 }
 
+void createContext(sigjmp_buf *context, void *routine)
+{
+    sigsetjmp(*context, 1);
+    context[0]->__jmpbuf[JB_BP] = translate_address((address_t)(allocStack(STACK_SZ, 0) + STACK_SZ - sizeof(int)));
+    context[0]->__jmpbuf[JB_SP] = context[0]->__jmpbuf[JB_BP];
+    if (routine)
+    {
+        context[0]->__jmpbuf[JB_PC] = translate_address((address_t)routine);
+    }
+}
+
+void setContext(sigjmp_buf *context)
+{
+    siglongjmp(*context, 1);
+}
+
+void raiseSignals()
+{
+    if (!__curproc)
+    {
+        return;
+    }
+    int k = __curproc->numPendingSig;
+    sigset_t mask;
+    for (int i = 0; i < k; i++)
+    {
+        // log_trace("Signal %d pending for %ld",__curproc->pendingSig[i],__curproc->tid);
+        sigaddset(&mask, __curproc->pendingSig[i]);
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);
+        // Remove from the pending list
+        __curproc->numPendingSig -= 1;
+        raise(__curproc->pendingSig[i]);
+    }
+}
+
+void switchContext(sigjmp_buf *old, sigjmp_buf *new)
+{
+    int ret = sigsetjmp(*old, 1);
+    if (ret == 0)
+    {
+        siglongjmp(*new, 1);
+    }
+    return;
+}
+
 /**
  * @brief Function to switch to the scheduler's context, acts as a coroutine to scheduler()
  * 
@@ -126,11 +187,9 @@ void disabletimer()
  */
 void switchToScheduler()
 {
-    if (swapcontext(__curproc->context, __scheduler->context) == -1)
-    {
-        perror("Context switch");
-        exit(EXIT_FAILURE);
-    }
+    switchContext(__curproc->ctx, __scheduler->ctx);
+    // log_trace("%d Returned here", __curproc->tid);
+    raiseSignals();
     enabletimer();
 }
 
@@ -149,40 +208,20 @@ static void scheduler()
     tcb *next = getNextThread(&__allThreads);
     if (!next)
         return;
-    int k = next->numPendingSig;
-    sigset_t mask;
-    for (int i = 0; i < k; i++)
-    {
-        // log_trace("Signal %d pending for %ld",next->pendingSig[i],next->tid);
-        sigaddset(&mask, next->pendingSig[i]);
-        sigprocmask(SIG_UNBLOCK, &mask, NULL);
-        // Remove from the pending list
-        next->numPendingSig -= 1;
-        raise(next->pendingSig[i]);
-    }
+
     // Set new thread as running and current thread as runnable
     if (curprocexited == 0)
     {
         tcb *__prev = __curproc;
         __curproc = next;
         next->thread_state = RUNNING;
-        // log_trace("Scheduler: switching from %d to %d", __prev->tid, next->tid);
-        if (setcontext(next->context) == -1)
-        {
-            perror("Context Switch: ");
-            exit(EXIT_FAILURE);
-        }
+        setContext(next->ctx);
     }
     else
     {
         __curproc = next;
         next->thread_state = RUNNING;
-        // log_trace("Scheduler: switching from deleted to %d", next->tid);
-        if (setcontext(next->context) == -1)
-        {
-            perror("Context Switch: ");
-            exit(EXIT_FAILURE);
-        }
+        setContext(next->ctx);
     }
 }
 
@@ -193,39 +232,36 @@ static void scheduler()
 static void initManyOne()
 {
     log_info("Library initialized");
+
     spin_init(&globallock);
     setSignals();
+
     __allThreads.back = NULL;
     __allThreads.front = NULL;
     __allThreads.len = 0;
+
     __mainproc = (tcb *)malloc(sizeof(tcb));
-    ucontext_t *thread_context = (ucontext_t *)malloc(sizeof(ucontext_t));
-    getcontext(thread_context);
-    initTcb(__mainproc, RUNNING, getpid(), thread_context);
+    sigjmp_buf *ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
+    // Main's context (has default stack and PC)
+    createContext(ctx, NULL);
+    //
+    initTcb(__mainproc, RUNNING, getpid(), ctx);
+
     __curproc = __mainproc;
+
     __nextpid = getpid() + 1;
     addThread(&__allThreads, __mainproc);
 
     __scheduler = (tcb *)malloc(sizeof(tcb));
-    thread_context = (ucontext_t *)malloc(sizeof(ucontext_t));
-    getcontext(thread_context);
-    thread_context->uc_stack.ss_sp = allocStack(STACK_SZ, 0);
-    thread_context->uc_stack.ss_size = STACK_SZ;
-    thread_context->uc_link = __mainproc->context;
-    makecontext(thread_context, scheduler, 0);
-    initTcb(__scheduler, RUNNING, 0, thread_context);
+    ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
+    // Schedulers context (has a new stack and PC)
+    createContext(ctx, scheduler);
+    //
+
+    // makecontext(thread_context, scheduler, 0);
+    initTcb(__scheduler, RUNNING, 0, ctx);
 
     starttimer();
-}
-
-/**
- * @brief Custom signal handler
- * 
- * @return void
- */
-void handlecustom()
-{
-    log_trace("Signal Handled in the Thread");
 }
 
 /**
@@ -233,10 +269,11 @@ void handlecustom()
  * 
  * @return void
  */
-void wrapRoutine(void *fa)
+void wrapRoutine()
 {
     WRAP_SIGNALS;
-    funcargs *temp = (funcargs *)fa;
+    // raiseSignals();
+    funcargs *temp = __curproc->args;
     enabletimer();
     (temp->f)(temp->arg);
     disabletimer();
@@ -268,43 +305,40 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
         initManyOne();
         isInit = 1;
     }
-    ucontext_t *thread_context = (ucontext_t *)malloc(sizeof(ucontext_t));
+    sigjmp_buf *ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
+
     // Allocate a new TCB and set all fields
     tcb *temp = (tcb *)malloc(sizeof(tcb));
-    getcontext(thread_context);
+
     funcargs *fa = (funcargs *)malloc(sizeof(funcargs));
     fa->f = routine;
     fa->arg = arg;
-    // Context of thread is modified to accepts timer interrupts
+    createContext(ctx, wrapRoutine);
+
+    temp->args = fa;
     if (attr)
     {
         if (((thread_attr *)attr)->stack)
         {
-            thread_context->uc_stack.ss_sp = ((thread_attr *)attr)->stack;
-            thread_context->uc_stack.ss_size = ((thread_attr *)attr)->stackSize;
+            ctx[0]->__jmpbuf[JB_SP] = translate_address((address_t)((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
         }
         else if (((thread_attr *)attr)->stackSize)
         {
             temp->stack = allocStack(((thread_attr *)attr)->stackSize, 0);
-            thread_context->uc_stack.ss_sp = temp->stack;
-            thread_context->uc_stack.ss_size = ((thread_attr *)attr)->stackSize;
+            ctx[0]->__jmpbuf[JB_SP] = (long)(temp->stack + ((thread_attr *)attr)->stackSize);
         }
     }
     else
     {
-        // thread_context->uc_stack.ss_sp = attr != NULL ? allocStack(STACK_SZ,0) : allocStack(((thread_attr *)attr)->stackSize,0);
-        temp->stack = allocStack(STACK_SZ, 0);
-        thread_context->uc_stack.ss_sp = temp->stack;
-        thread_context->uc_stack.ss_size = STACK_SZ;
+        // temp->stack = ctx[0]->__jmpbuf[JB_SP];
     }
-    thread_context->uc_link = __mainproc->context;
-    makecontext(thread_context, (void *)&wrapRoutine, 1, (void *)(fa));
-    initTcb(temp, RUNNABLE, __nextpid++, thread_context);
+
+    initTcb(temp, RUNNABLE, __nextpid++, ctx);
     // Add the thread to list of runnable threads
     addThread(&__allThreads, temp);
     *t = temp->tid;
-    log_trace("Created thread %d", *t);
-    // Start the timer for the main thread
+    sigsetjmp(*__mainproc->ctx, 1);
+
     enabletimer();
     return 0;
 }
@@ -318,7 +352,6 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
  */
 int thread_join(thread t, void **retLocation)
 {
-    // log_info("trying to join thread %d\n", t);
     disabletimer();
     tcb *waitedThread = getThread(&__allThreads, t);
     if (waitedThread == NULL)
@@ -340,9 +373,11 @@ int thread_join(thread t, void **retLocation)
     waitedThread->waiters = (int *)realloc(waitedThread->waiters, (++(waitedThread->numWaiters)) * sizeof(int));
     waitedThread->waiters[waitedThread->numWaiters - 1] = __curproc->tid;
     __curproc->thread_state = WAITING;
+
     switchToScheduler();
     if (retLocation)
         *retLocation = (void *)0;
+
     return 0;
 }
 

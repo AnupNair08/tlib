@@ -309,7 +309,7 @@ void unlockMutex(tcbQueue *t, mut_t *lock)
     return;
 }
 
-void initTcb(tcb *t, int initState, thread tid, ucontext_t *context)
+void initTcb(tcb *t, int initState, thread tid, sigjmp_buf *context)
 {
     t->thread_state = initState;
     t->tid = tid;
@@ -319,6 +319,6 @@ void initTcb(tcb *t, int initState, thread tid, ucontext_t *context)
     t->numPendingSig = 0;
     t->pendingSig = NULL;
     t->mutexWait = NULL;
-    t->context = context;
+    t->ctx = context;
     t->stack = NULL;
 }
