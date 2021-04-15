@@ -10,19 +10,22 @@
 #include "../log.h"
 #include "../thread.h"
 
-void func(void *i){
-    printf("In thread %d\n", *(int*)i);
+void func(void *i)
+{
+    printf("In thread %d\n", *(int *)i);
     fflush(stdout);
     // sleep(*(int *)i);
     while(1){}
     return;
 }
-void handleGlobal(int signum){
+void handleGlobal(int signum)
+{
     printf("Global signal caught in main thread\n");
     return;
 }
 
-void routine(){
+void routine()
+{
     // sleep(4);
     thread_exit(NULL);
 }

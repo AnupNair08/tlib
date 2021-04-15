@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <limits.h>
-#include <setjmp.h>
 #include "attributetypes.h"
 #include "log.h"
 #include "tlib.h"
@@ -35,6 +34,7 @@ sigset_t __signalList;
 unsigned long int __nextpid;
 
 typedef unsigned long address_t;
+#define JB_BP 5
 #define JB_SP 6
 #define JB_PC 7
 
@@ -93,10 +93,10 @@ static void setSignals()
 static void starttimer()
 {
     struct itimerval it_val;
-    it_val.it_interval.tv_sec = 1;
-    it_val.it_interval.tv_usec = 0;
-    it_val.it_value.tv_sec = 1;
-    it_val.it_value.tv_usec = 0;
+    it_val.it_interval.tv_sec = 0;
+    it_val.it_interval.tv_usec = 100;
+    it_val.it_value.tv_sec = 0;
+    it_val.it_value.tv_usec = 100;
     if (setitimer(ITIMER_VIRTUAL, &it_val, NULL) == -1)
     {
         perror("setitimer");
@@ -138,10 +138,12 @@ void disabletimer()
 void createContext(sigjmp_buf *context, void *routine)
 {
     sigsetjmp(*context, 1);
+    context[0]->__jmpbuf[JB_BP] = translate_address((address_t)(allocStack(STACK_SZ, 0) + STACK_SZ - sizeof(int)));
+    context[0]->__jmpbuf[JB_SP] = context[0]->__jmpbuf[JB_BP];
     if (routine)
-        context[0]->__jmpbuf[JB_SP] = translate_address((address_t)(allocStack(STACK_SZ, 0) + STACK_SZ - sizeof(int)));
-    if (routine)
+    {
         context[0]->__jmpbuf[JB_PC] = translate_address((address_t)routine);
+    }
 }
 
 void setContext(sigjmp_buf *context)
@@ -186,7 +188,7 @@ void switchContext(sigjmp_buf *old, sigjmp_buf *new)
 void switchToScheduler()
 {
     switchContext(__curproc->ctx, __scheduler->ctx);
-    log_trace("%d Returned here", __curproc->tid);
+    // log_trace("%d Returned here", __curproc->tid);
     raiseSignals();
     enabletimer();
 }

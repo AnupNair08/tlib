@@ -36,6 +36,8 @@ int addThread(tcbQueue *t, tcb *thread_tcb)
 
 int removeThread(tcbQueue *t, unsigned long int tid)
 {
+    thread *reQueueList = NULL;
+    int numRequeue = 0;
     qnode *tmp = t->front;
     if (t->front == NULL)
     {
@@ -45,9 +47,8 @@ int removeThread(tcbQueue *t, unsigned long int tid)
     {
         for (int j = 0; j < t->front->tcbnode->numWaiters; j++)
         {
-            tcb *setRunnable = getThread(t, t->front->tcbnode->waiters[j]);
-            setRunnable->thread_state = RUNNABLE;
-            reQueue(t, setRunnable);
+            reQueueList = (thread *)realloc(reQueueList, ++numRequeue * sizeof(thread));
+            reQueueList[numRequeue - 1] = t->front->tcbnode->waiters[j];
         }
         t->front = tmp->next;
         free(tmp->tcbnode->stack);
@@ -59,6 +60,13 @@ int removeThread(tcbQueue *t, unsigned long int tid)
         free(tmp->tcbnode);
         free(tmp);
         t->len--;
+        for (int i = 0; i < numRequeue; i++)
+        {
+            tcb *setRunnable = getThread(t, reQueueList[i]);
+            setRunnable->thread_state = RUNNABLE;
+            reQueue(t, setRunnable);
+        }
+        free(reQueueList);
         return 0;
     }
     else
@@ -73,9 +81,8 @@ int removeThread(tcbQueue *t, unsigned long int tid)
             {
                 for (int j = 0; j < tmp->next->tcbnode->numWaiters; j++)
                 {
-                    tcb *setRunnable = getThread(t, tmp->next->tcbnode->waiters[j]);
-                    setRunnable->thread_state = RUNNABLE;
-                    reQueue(t, setRunnable);
+                    reQueueList = (thread *)realloc(reQueueList, ++numRequeue * sizeof(thread));
+                    reQueueList[numRequeue - 1] = tmp->next->tcbnode->waiters[j];
                 }
                 free(tmp->next->tcbnode->stack);
                 qnode *delNode = tmp->next;
@@ -84,11 +91,17 @@ int removeThread(tcbQueue *t, unsigned long int tid)
                     t->back = tmp;
                 }
                 tmp->next = delNode->next;
-                // free(stack);
                 free(delNode->tcbnode->waiters);
                 free(delNode->tcbnode);
                 free(delNode);
                 t->len--;
+                for (int i = 0; i < numRequeue; i++)
+                {
+                    tcb *setRunnable = getThread(t, reQueueList[i]);
+                    setRunnable->thread_state = RUNNABLE;
+                    reQueue(t, setRunnable);
+                }
+                free(reQueueList);
                 return 0;
             }
             tmp = tmp->next;
@@ -248,16 +261,20 @@ void removeExitedThreads(tcbQueue *t)
     thread *deleted = NULL;
     int numDeleted = 0;
     qnode *tmp = t->front;
-    while (tmp->tcbnode->exited == 1)
+    while (tmp)
     {
-        deleted = (thread *)realloc(deleted, ++numDeleted * sizeof(thread));
-        deleted[numDeleted - 1] = tmp->tcbnode->tid;
+        if (tmp->tcbnode->exited == 1)
+        {
+            deleted = (thread *)realloc(deleted, ++numDeleted * sizeof(thread));
+            deleted[numDeleted - 1] = tmp->tcbnode->tid;
+        }
         tmp = tmp->next;
     }
     for (int i = 0; i < numDeleted; i++)
     {
         removeThread(t, deleted[i]);
     }
+    free(deleted);
     return;
 }
 
@@ -292,7 +309,7 @@ void unlockMutex(tcbQueue *t, mut_t *lock)
     return;
 }
 
-void initTcb(tcb *t, int initState, thread tid, sigjmp_buf *ctx)
+void initTcb(tcb *t, int initState, thread tid, sigjmp_buf *context)
 {
     t->thread_state = initState;
     t->tid = tid;
@@ -302,6 +319,6 @@ void initTcb(tcb *t, int initState, thread tid, sigjmp_buf *ctx)
     t->numPendingSig = 0;
     t->pendingSig = NULL;
     t->mutexWait = NULL;
-    t->ctx = ctx;
+    t->ctx = context;
     t->stack = NULL;
 }

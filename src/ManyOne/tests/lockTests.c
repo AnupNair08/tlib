@@ -1,69 +1,78 @@
-#include<stdio.h>
-#include<unistd.h>
+#include <stdio.h>
+#include <unistd.h>
 #ifdef BUILD
-    #include<tlib.h>
+#include <tlib.h>
 #else
-    #include "../thread.h"
+#include "../thread.h"
 #endif
 #include "tests.h"
 #include "../log.h"
 #define WITH_LOCKS 1
 #define WITHOUT_LOCKS 0
 
-
 int spinTest = 0;
 short refstring[4];
 
 mut_t sleeplock;
 spin_t spinlock;
-long c1,c2,c,run = 1;
+long c1, c2, c, run = 1;
 
-void routine1(void *l){
-    if(l) spin_acquire((spin_t *)l);
-    printf("Routine 1 Before: %d\n",spinTest);
+void routine1(void *l)
+{
+    if (l)
+        spin_acquire((spin_t *)l);
+    printf("Routine 1 Before: %d\n", spinTest);
     refstring[0] = spinTest;
     spinTest++;
-    printf("Routine 1 After: %d\n",spinTest);
+    printf("Routine 1 After: %d\n", spinTest);
     refstring[1] = spinTest;
-    if(l) spin_release((spin_t *)l);
+    if (l)
+        spin_release((spin_t *)l);
 }
 
-void routine2(void *l){
-    if(l) spin_acquire((spin_t *)l);
-    printf("Routine 2 Before: %d\n",spinTest);
+void routine2(void *l)
+{
+    if (l)
+        spin_acquire((spin_t *)l);
+    printf("Routine 2 Before: %d\n", spinTest);
     refstring[2] = spinTest;
     spinTest++;
-    printf("Routine 2 After: %d\n",spinTest);
+    printf("Routine 2 After: %d\n", spinTest);
     refstring[3] = spinTest;
-    if(l) spin_release((spin_t *)l);
+    if (l)
+        spin_release((spin_t *)l);
 }
 
-void testLocks(int type){
-    thread t1,t2;
+void testLocks(int type)
+{
+    thread t1, t2;
     spin_t lock;
     spin_t *temp = NULL;
-    if(type){
+    if (type)
+    {
         spin_init(&lock);
         temp = &lock;
-    } 
-    thread_create(&t1,NULL,routine1, (void *)temp);
-    thread_create(&t2,NULL,routine2, (void *)temp);
-    thread_join(t1,NULL);
-    thread_join(t2,NULL);
+    }
+    thread_create(&t1, NULL, routine1, (void *)temp);
+    thread_create(&t2, NULL, routine2, (void *)temp);
+    thread_join(t1, NULL);
+    thread_join(t2, NULL);
 
-    log_trace("Value of global is %d",spinTest);
+    log_trace("Value of global is %d", spinTest);
     spinTest = 0;
 }
 
-int isConsistent(){
+int isConsistent()
+{
     // for(int i = 0;i < 4; i++) printf("%d\n",refstring[i]);
-    return (refstring[0] == 0 && refstring[1] == 1 && refstring[2] == 1 && refstring[3] == 2) || 
-            (refstring[0] == 1 && refstring[1] == 2 && refstring[2] == 0 && refstring[3] == 1);
+    return (refstring[0] == 0 && refstring[1] == 1 && refstring[2] == 1 && refstring[3] == 2) ||
+           (refstring[0] == 1 && refstring[1] == 2 && refstring[2] == 0 && refstring[3] == 1);
 }
 
-
-void *f1(void *lock){
-    while(run){
+void *f1(void *lock)
+{
+    while (run)
+    {
         // log_trace("f1 scheduled");
         c1++;
         mutex_acquire((mut_t *)lock);
@@ -72,9 +81,10 @@ void *f1(void *lock){
         mutex_release((mut_t *)lock);
     }
 }
-void *f2(void *lock){
-    while(run){
-        // log_trace("f2 scheduled");
+void *f2(void *lock)
+{
+    while (run)
+    {
         // log_trace("f2");
         c2++;
         mutex_acquire((mut_t *)lock);
@@ -83,31 +93,40 @@ void *f2(void *lock){
     }
 }
 
-int testMutex(){
+int testMutex()
+{
     log_info("Starting test with Mutex");
     mutex_init(&sleeplock);
-    thread t1,t2;
-    thread_create(&t1,NULL,f1,(void *)&sleeplock);
-    thread_create(&t2,NULL,f2,(void *)&sleeplock);
-    while(c<10){}
+    thread t1, t2;
+    thread_create(&t1, NULL, f1, (void *)&sleeplock);
+    thread_create(&t2, NULL, f2, (void *)&sleeplock);
+    while (c < 10)
+    {
+    }
     run = 0;
     thread_join(t1, NULL);
     thread_join(t2, NULL);
-    log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n",c1+c2,c);
-    if(c1 + c2 - c > 2) printf(RED"Test failed\n"RESET);
-    else printf(GREEN"Test passed\n"RESET);
+    log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n", c1 + c2, c);
+    if (c1 + c2 - c > 2)
+        printf(RED "Test failed\n" RESET);
+    else
+        printf(GREEN "Test passed\n" RESET);
     return 0;
 }
-void *f1spin(void *lock){
-    while(run){
+void *f1spin(void *lock)
+{
+    while (run)
+    {
         c1++;
         spin_acquire((spin_t *)lock);
         c++;
         spin_release((spin_t *)lock);
     }
 }
-void *f2spin(void *lock){
-    while(run){
+void *f2spin(void *lock)
+{
+    while (run)
+    {
         c2++;
         spin_acquire((spin_t *)lock);
         c++;
@@ -115,27 +134,33 @@ void *f2spin(void *lock){
     }
 }
 
-int testSpin(){
+int testSpin()
+{
     c1 = 0;
     c2 = 0;
     run = 1;
     c = 0;
     log_info("Starting test with Spinlocks");
     spin_init(&spinlock);
-    thread t1,t2;
-    thread_create(&t1,NULL,f1spin,(void *)&spinlock);
-    thread_create(&t2,NULL,f2spin,(void *)&spinlock);
-    while(c<10){}
+    thread t1, t2;
+    thread_create(&t1, NULL, f1spin, (void *)&spinlock);
+    thread_create(&t2, NULL, f2spin, (void *)&spinlock);
+    while (c < 10)
+    {
+    }
     run = 0;
     thread_join(t1, NULL);
     thread_join(t2, NULL);
-    log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n",c1+c2,c);
-    if(c1 + c2 - c > 2) printf(RED"Test failed\n"RESET);
-    else printf(GREEN"Test passed\n"RESET);
+    log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n", c1 + c2, c);
+    if (c1 + c2 - c > 2)
+        printf(RED "Test failed\n" RESET);
+    else
+        printf(GREEN "Test passed\n" RESET);
     return 0;
 }
 
-int main(){
+int main()
+{
     setbuf(stdout, NULL);
     printf("tlib Synchronization Tests\n");
     int i = 1;
@@ -152,7 +177,6 @@ int main(){
     //     if(i > 5) break;
     // }
     testMutex();
-    // testSpin();
+    testSpin();
     return 0;
 }
-

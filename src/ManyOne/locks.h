@@ -9,7 +9,7 @@
 typedef volatile int spin_t;
 typedef volatile int mut_t;
 
-int spin_init(spin_t*);
+int spin_init(spin_t *);
 
 int spin_acquire(spin_t *);
 
