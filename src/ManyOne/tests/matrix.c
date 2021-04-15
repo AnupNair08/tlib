@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "../attributetypes.h"
 #include "tests.h"
 typedef struct arg_struct{
     int rowFrom;

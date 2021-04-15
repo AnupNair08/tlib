@@ -1,17 +1,12 @@
 #include "tlib.h"
-#include "attributetypes.h"
-#include <stdlib.h>
+#include "tattr.h"
 
 static thread_attr __default = {NULL,STACK_SZ};
 
 int thread_attr_init(thread_attr *t){
     t->stackSize = __default.stackSize;
     t->stack = __default.stack;
-    // t->detachState = __default.detachState;
-    // t->inheritSched = __default.inheritSched;
-    // t->schedParams = __default.schedParams;
-    // t->scope = __default.scope;
-    // t->schedPolicy = __default.schedPolicy;
+    t->schedInterval = (schedParams){ .sc = SCHED_SC, .ms = SCHED_MS};
     return 0;
 }
 
@@ -37,4 +32,16 @@ int thread_attr_setStackAddr(thread_attr *t,void *stack,size_t size){
     t->stack = stack;
     t->stackSize = size;
     return 0;
+}
+
+int thread_attr_setSchedInterval(thread_attr *t, schedParams interval){
+    if(!t) return -1;
+    t->schedInterval.sc = interval.sc;
+    t->schedInterval.ms = interval.ms;
+    return 0;
+}
+
+schedParams* thread_attr_getSchedInterval(thread_attr *t){
+    if(!t) return NULL;
+    return &(t->schedInterval);
 }

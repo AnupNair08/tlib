@@ -1,17 +1,28 @@
+/**
+ * @file tlib.h
+ * @author Hrishikesh Athalye & Anup Nair
+ * @brief API Interface for internal library implementations
+ * @version 0.1
+ * @date 2021-04-15
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
+
 #include <stdlib.h>
-#include <unistd.h>
 #include <setjmp.h>
 #include "locks.h"
 
-typedef unsigned long thread;
-typedef struct funcargs
-{
-    void (*f)(void *);
-    void *arg;
-} funcargs;
+// Default parameters for thread creation and scheduling
+#define STACK_SZ 65536
+#define GUARD_SZ getpagesize()
+#define SCHED_SC 1
+#define SCHED_MS 0
+#define TGKILL 234
 
-int createManyOne(thread *, void *, void *, void *);
-
+/**
+ * @brief States of a thread 
+ */
 enum thread_state
 {
     RUNNING,
@@ -20,60 +31,28 @@ enum thread_state
     RUNNABLE
 };
 
-typedef struct tcb
+/**
+ * @brief Thread object
+ */
+typedef unsigned long thread;
+
+/**
+ * @brief Structure to store thread routine and arguments
+ */
+typedef struct funcargs
 {
-    thread tid;
-    void *stack;
-    size_t stack_sz;
-    int thread_state;
-    sigjmp_buf *ctx;
-    //indicate if the process has exited or not
-    int exited;
-    //list of all waiters on this process
-    int *waiters;
-    int numWaiters;
-    mut_t *mutexWait;
-    // Implement as a queue for easy deletion
-    int *pendingSig;
-    int numPendingSig;
-    funcargs *args;
-} tcb;
+    void (*f)(void *);
+    void *arg;
+} funcargs;
 
-typedef struct qnode
-{
-    tcb *tcbnode;
-    struct qnode *next;
-} qnode;
 
-typedef struct tcbQueue
-{
-    qnode *front;
-    qnode *back;
-    int len;
-} tcbQueue;
-
-#define STACK_SZ 65536
-#define GUARD_SZ getpagesize()
-#define TGKILL 234
-#define CLONE_FLAGS CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD | CLONE_SYSVSEM | CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID
-#define SCHED_INTERVAL 2000
-
-void wrapRoutine();
+// Thread APIs 
+int createManyOne(thread *, void *, void *, void *);
+static void initManyOne();
 static void *allocStack(size_t, size_t);
+void wrapRoutine();
 static void starttimer();
 void enabletimer();
 void disabletimer();
 void switchToScheduler();
 static void scheduler();
-static void initManyOne();
-
-int addThread(tcbQueue *, tcb *);
-tcb *getNextThread(tcbQueue *);
-tcb *getThread(tcbQueue *, thread);
-void printAllmo(tcbQueue *);
-void queueRunning(tcbQueue *);
-void removeExitedThreads(tcbQueue *);
-int removeThread(tcbQueue *, unsigned long int);
-void reQueue(tcbQueue *, tcb *);
-void unlockMutex(tcbQueue *, mut_t *);
-void initTcb(tcb *, int, thread, sigjmp_buf *);

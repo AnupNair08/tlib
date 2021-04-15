@@ -1,35 +1,26 @@
 #define _GNU_SOURCE
 #define DEV
 #include <sched.h>
-#include <unistd.h>
 #include <sys/stat.h>
-#include <stdio.h>
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/types.h>
-#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/wait.h>
-#include <linux/futex.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/syscall.h>
-#include <stdlib.h>
-#include <stdatomic.h>
 #include <limits.h>
-#include "attributetypes.h"
 #include "log.h"
-#include "tlib.h"
+#include "tattr.h"
+#include "utils.h"
 #include "sighandler.h"
 tcb *__curproc = NULL;
 tcb *__scheduler = NULL;
 tcb *__mainproc = NULL;
 tcbQueue __allThreads;
-spin_t globallock;
 sigset_t __signalList;
 unsigned long int __nextpid;
 
@@ -233,7 +224,6 @@ static void initManyOne()
 {
     log_info("Library initialized");
 
-    spin_init(&globallock);
     setSignals();
 
     __allThreads.back = NULL;

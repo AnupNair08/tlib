@@ -1,10 +1,24 @@
-#include "tlib.h"
+#include "utils.h"
 
+/**
+ * @brief TCB of current running process 
+ */
 extern tcb* __curproc;
+/**
+ * @brief TCB of scheduler 
+ */
 extern tcb* __scheduler;
+/**
+ * @brief Thread Queue 
+ */
 extern tcbQueue __allThreads;
-extern mut_t globallock;
 
+/**
+ * @brief Initialize the spinlock object
+ * 
+ * @param lock Spinlock object
+ * @return int 
+ */
 int spin_init(spin_t* lock){
     volatile int outval; 
     asm (
@@ -14,6 +28,13 @@ int spin_init(spin_t* lock){
     );
     return 0;
 }
+
+/**
+ * @brief Acquire a lock and wait atomically for the lock object
+ * 
+ * @param lock Spinlock object
+ * @return int 
+ */
 int spin_acquire(spin_t *lock){
     int outval;
     asm(
@@ -27,6 +48,12 @@ int spin_acquire(spin_t *lock){
     return 0;
 }
 
+/**
+ * @brief Release lock atomically
+ * 
+ * @param lock Spinlock object
+ * @return int 
+ */
 int spin_release(spin_t *lock){
     int outval;
     asm(
@@ -37,6 +64,12 @@ int spin_release(spin_t *lock){
     return 0;
 }
 
+/**
+ * @brief Initialize the mutex lock object 
+ * 
+ * @param lock Mutex Lock object
+ * @return int 
+ */
 int mutex_init(mut_t *lock)
 {
     int outval;
@@ -48,6 +81,13 @@ int mutex_init(mut_t *lock)
     return 0;
 }
 
+
+/**
+ * @brief Atomically acquire the lock and wait by sleeping if not available
+ * 
+ * @param lock Mutex Lock object
+ * @return int 
+ */
 int mutex_acquire(mut_t *lock)
 {
     volatile int outval ;
@@ -68,6 +108,13 @@ int mutex_acquire(mut_t *lock)
     enabletimer();
 }
 
+
+/**
+ * @brief Release the lock object atomically and wake up waiting threads
+ * 
+ * @param lock Mutex Lock object
+ * @return int 
+ */
 int mutex_release(mut_t *lock)
 {
     disabletimer();
