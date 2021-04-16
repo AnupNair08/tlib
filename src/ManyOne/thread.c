@@ -17,6 +17,7 @@
 #include "tattr.h"
 #include "utils.h"
 #include "sighandler.h"
+#include "mangle.h"
 tcb *__curproc = NULL;
 tcb *__scheduler = NULL;
 tcb *__mainproc = NULL;
@@ -24,23 +25,23 @@ tcbQueue __allThreads;
 sigset_t __signalList;
 unsigned long int __nextpid;
 
-typedef unsigned long address_t;
-#define JB_BP 5
-#define JB_SP 6
-#define JB_PC 7
+// typedef unsigned long address_t;
+// #define JB_BP 5
+// #define JB_SP 6
+// #define JB_PC 7
 
-/* A translation is required when using an address of a variable.
-   Use this as a black box in your code. 
-   This code was referenced from : https://sites.cs.ucsb.edu/~chris/teaching/cs170/projects/proj2.html*/
-address_t translate_address(address_t addr)
-{
-    address_t ret;
-    asm volatile("xor    %%fs:0x30,%0\n"
-                 "rol    $0x11,%0\n"
-                 : "=g"(ret)
-                 : "0"(addr));
-    return ret;
-}
+// /* A translation is required when using an address of a variable.
+//    Use this as a black box in your code. 
+//    This code was referenced from : https://sites.cs.ucsb.edu/~chris/teaching/cs170/projects/proj2.html*/
+// address_t translate_address(address_t addr)
+// {
+//     address_t ret;
+//     asm volatile("xor    %%fs:0x30,%0\n"
+//                  "rol    $0x11,%0\n"
+//                  : "=g"(ret)
+//                  : "0"(addr));
+//     return ret;
+// }
 
 /**
  * @brief Function to allocate a stack to Many One threads
@@ -126,10 +127,10 @@ void disabletimer()
     return;
 }
 
-void createContext(sigjmp_buf *context, void *routine)
+void createContext(sigjmp_buf *context, void *routine, void *stack)
 {
     sigsetjmp(*context, 1);
-    context[0]->__jmpbuf[JB_BP] = translate_address((address_t)(allocStack(STACK_SZ, 0) + STACK_SZ - sizeof(int)));
+    context[0]->__jmpbuf[JB_BP] = translate_address((address_t)(stack - sizeof(int)));
     context[0]->__jmpbuf[JB_SP] = context[0]->__jmpbuf[JB_BP];
     if (routine)
     {
@@ -233,7 +234,7 @@ static void initManyOne()
     __mainproc = (tcb *)malloc(sizeof(tcb));
     sigjmp_buf *ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
     // Main's context (has default stack and PC)
-    createContext(ctx, NULL);
+    createContext(ctx, NULL, NULL);
     //
     initTcb(__mainproc, RUNNING, getpid(), ctx);
 
@@ -245,7 +246,8 @@ static void initManyOne()
     __scheduler = (tcb *)malloc(sizeof(tcb));
     ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
     // Schedulers context (has a new stack and PC)
-    createContext(ctx, scheduler);
+    void *schedStack = allocStack(STACK_SZ, 0) + STACK_SZ;
+    createContext(ctx, scheduler,schedStack);
     //
 
     // makecontext(thread_context, scheduler, 0);
@@ -303,7 +305,6 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
     funcargs *fa = (funcargs *)malloc(sizeof(funcargs));
     fa->f = routine;
     fa->arg = arg;
-    createContext(ctx, wrapRoutine);
 
     temp->args = fa;
     if (attr)
@@ -311,16 +312,18 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
         if (((thread_attr *)attr)->stack)
         {
             ctx[0]->__jmpbuf[JB_SP] = translate_address((address_t)((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
+            createContext(ctx, wrapRoutine,((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
         }
         else if (((thread_attr *)attr)->stackSize)
         {
             temp->stack = allocStack(((thread_attr *)attr)->stackSize, 0);
-            ctx[0]->__jmpbuf[JB_SP] = (long)(temp->stack + ((thread_attr *)attr)->stackSize);
+            createContext(ctx,wrapRoutine,temp->stack + ((thread_attr *)attr)->stackSize);
         }
     }
     else
     {
-        // temp->stack = ctx[0]->__jmpbuf[JB_SP];
+        temp->stack = allocStack(STACK_SZ, 0) + STACK_SZ;
+        createContext(ctx, wrapRoutine,temp->stack);
     }
 
     initTcb(temp, RUNNABLE, __nextpid++, ctx);
@@ -404,7 +407,6 @@ int thread_kill(pid_t t, int signum)
 int thread_exit(void *retVal)
 {
     disabletimer();
-    log_trace("Exiting thread %d", __curproc->tid);
     __curproc->exited = 1;
     switchToScheduler();
     // enabletimer();
