@@ -13,7 +13,6 @@
 #include <sys/types.h>
 #include <errno.h>
 #include "tests.h" 
-#include "../log.h"
 
 void func(){
     printf("Dummy routine\n");

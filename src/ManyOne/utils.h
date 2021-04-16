@@ -22,11 +22,11 @@ typedef struct tcb
     size_t stack_sz;
     int thread_state;
     sigjmp_buf *ctx;
-    int exited;             //indicate if the process has exited or not
-    int *waiters;           //list of all waiters on this process
+    int exited;   //indicate if the process has exited or not
+    int *waiters; //list of all waiters on this process
     int numWaiters;
-    mut_t *mutexWait;
-    int *pendingSig;        // Implement as a queue for easy deletion
+    mutex_t *mutexWait;
+    int *pendingSig; // Implement as a queue for easy deletion
     int numPendingSig;
     funcargs *args;
 } tcb;
@@ -100,4 +100,4 @@ void reQueue(tcbQueue *, tcb *);
  * @brief 
  * 
  */
-void unlockMutex(tcbQueue *, mut_t *);
+void unlockMutex(tcbQueue *, mutex_t *);

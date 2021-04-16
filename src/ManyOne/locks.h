@@ -21,7 +21,7 @@ typedef volatile int spin_t;
 /**
  * @brief Mutex object
  */
-typedef volatile int mut_t;
+typedef volatile int mutex_t;
 
 // Spin lock APIs
 int spin_init(spin_t *);
@@ -31,8 +31,8 @@ int spin_acquire(spin_t *);
 int spin_release(spin_t *);
 
 // Mutex lock APIs
-int mutex_init(mut_t *);
+int mutex_init(mutex_t *);
 
-int mutex_acquire(mut_t *);
+int mutex_acquire(mutex_t *);
 
-int mutex_release(mut_t *);
+int mutex_release(mutex_t *);

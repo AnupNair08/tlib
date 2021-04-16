@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #define DEV
+#include <stdio.h>
 #include <sched.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -13,7 +14,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <limits.h>
-#include "log.h"
 #include "tattr.h"
 #include "utils.h"
 #include "sighandler.h"
@@ -223,7 +223,7 @@ static void scheduler()
  */
 static void initManyOne()
 {
-    log_info("Library initialized");
+    printf("Library initialized\n");
 
     setSignals();
 
@@ -383,6 +383,7 @@ int thread_join(thread t, void **retLocation)
  */
 int thread_kill(pid_t t, int signum)
 {
+    int ret = 0;
     disabletimer();
     if (signum == SIGINT || signum == SIGCONT || signum == SIGSTOP)
     {
@@ -394,14 +395,21 @@ int thread_kill(pid_t t, int signum)
         {
             raise(signum);
             enabletimer();
-            return 0;
+            return ret;
         }
         tcb *temp = getThread(&__allThreads, t);
-        // A memory leak here
-        temp->pendingSig = (int *)realloc(temp->pendingSig, (++(temp->numPendingSig) * sizeof(int)));
-        temp->pendingSig[temp->numPendingSig - 1] = signum;
+        if (temp)
+        {
+            temp->pendingSig = (int *)realloc(temp->pendingSig, (++(temp->numPendingSig) * sizeof(int)));
+            temp->pendingSig[temp->numPendingSig - 1] = signum;
+        }
+        else
+        {
+            ret = -1;
+        }
     }
     enabletimer();
+    return ret;
 }
 
 int thread_exit(void *retVal)

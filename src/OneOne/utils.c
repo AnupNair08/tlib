@@ -1,11 +1,11 @@
 #define _GNU_SOURCE
+#include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include "utils.h"
-#include "log.h"
 
 #define TGKILL 234
 
@@ -68,7 +68,7 @@ int singlyLLDelete(singlyLL *ll, unsigned long int tid)
     printf("LL status before del and tid is %d\n", tid);
     while (tmp1)
     {
-        log_error("%ld ", tmp1->tidCpy);
+        printf("%ld \n", tmp1->tidCpy);
         tmp1 = tmp1->next;
     }
     puts("");
@@ -81,8 +81,8 @@ int singlyLLDelete(singlyLL *ll, unsigned long int tid)
     if (tmp->tidCpy == tid)
     {
         ll->head = ll->head->next;
-        if(tmp->fa->stack)
-        free(tmp->fa->stack);
+        if (tmp->fa->stack)
+            free(tmp->fa->stack);
         free(tmp->fa);
         free(tmp);
         if (ll->head == NULL)
@@ -100,8 +100,8 @@ int singlyLLDelete(singlyLL *ll, unsigned long int tid)
             {
                 ll->tail = tmp;
             }
-            if(tmp->next->fa->stack)
-            free(tmp->next->fa->stack);
+            if (tmp->next->fa->stack)
+                free(tmp->next->fa->stack);
             free(tmp->next->fa);
             free(tmp->next);
             tmp->next = tmpNext;
@@ -204,7 +204,6 @@ void printAllNodes(singlyLL *l)
     while (tmp)
     {
         printf("tid%ld tidCpy%ld-->", tmp->tid, tmp->tidCpy);
-        fflush(stdout);
         tmp = tmp->next;
     }
     printf("\n");
