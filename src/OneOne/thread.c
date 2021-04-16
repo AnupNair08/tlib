@@ -25,11 +25,6 @@ singlyLL __tidList;
 
 
 void cleanup(){
-    node *tmp = __tidList.head;
-    while(tmp){    
-        // singlyLLDelete(&__tidList,tmp->tidCpy);
-        tmp = tmp->next;
-    }
     free(__tidList.head);
 }
 
@@ -41,19 +36,22 @@ static void init(){
     log_info("Library initialised\n");
     fflush(stdout);
     spin_init(&globalLock);
+
     sigset_t signalMask;
     sigfillset(&signalMask);
     sigdelset(&signalMask,SIGINT);
     sigdelset(&signalMask,SIGSTOP);
     sigdelset(&signalMask,SIGCONT);
     sigprocmask(SIG_BLOCK,&signalMask,NULL);
+    
     spin_acquire(&globalLock);
     singlyLLInit(&__tidList);
     node * insertedNode = singlyLLInsert(&__tidList, getpid());
     spin_release(&globalLock);
+    
     if(insertedNode == NULL){
         log_error("Thread address not found");
-        // spin_release(&globalLock);
+        spin_release(&globalLock);
         return;
     }
     insertedNode->tidCpy = getpid();
@@ -95,12 +93,7 @@ static int wrap(void *fa){
         WRAP_SIGNALS(sigArr[i]);
     }
     temp->f(temp->arg);
-    // free(temp->stack);
-    register int i asm("eax");
-    int regval = i;
-    // temp->insertedNode->retVal = (void *)&regval;
     thread_exit(NULL);
-    // log_trace("Thread exited with return value %d", regval);
 }
 
 /**
@@ -116,9 +109,13 @@ static int wrap(void *fa){
 int thread_create(thread *t,void *attr,void * routine, void *arg){
     static int initState = 0;
     fflush(stdout);
+    
+    if(t == NULL || routine == NULL){
+        return EINVAL;
+    }
+    
     thread tid;
     void *thread_stack;
-    int status;
     if(initState == 0){
         initState = 1;
         init();
@@ -194,6 +191,9 @@ int thread_create(thread *t,void *attr,void * routine, void *arg){
  * @return int
  */
 int thread_kill(pid_t tid, int signum){
+    if(signum == 0){
+        return -1;
+    }
     int ret;
     if(signum == SIGINT || signum == SIGCONT || signum == SIGSTOP){
        killAllThreads(&__tidList, signum);
@@ -222,16 +222,15 @@ int thread_kill(pid_t tid, int signum){
  * @return int
  */
 int thread_join(thread t, void **retLocation){
-    // spin_acquire(&globalLock);
-    int status;
+    spin_acquire(&globalLock);
     void *addr = returnCustomTidAddress(&__tidList, t);
     if(addr == NULL){
-        // spin_release(&globalLock);
+        spin_release(&globalLock);
         return ESRCH;
     }
     if(*((pid_t*)addr) == 0){
         singlyLLDelete(&__tidList, t);
-        // spin_release(&globalLock);
+        spin_release(&globalLock);
         return EINVAL;
     }
     int ret;
@@ -244,7 +243,7 @@ int thread_join(thread t, void **retLocation){
         *retLocation = getReturnValue(&__tidList, t);
     } 
     singlyLLDelete(&__tidList, t);
-    // spin_release(&globalLock);
+    spin_release(&globalLock);
     return ret;
 }
 

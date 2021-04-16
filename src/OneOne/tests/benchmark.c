@@ -145,13 +145,6 @@ int main(int argc, char *argv[]){
         for(int i = 0; i < 3; i++){
             thread_join(threads[i], NULL);
         }
-        // printf("%d %d\n", r1, c2);
-        // for(int i = 0; i < r1; i++){
-        //     for(int j = 0; j < c2; j++){
-        //         printf("%d ", res[i][j]);
-        //     }
-        //     printf("\n");
-        // }
         for(int i = 0; i < r1; i++){
             free(res[i]);
         }

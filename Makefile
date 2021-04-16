@@ -41,8 +41,9 @@ alltest: $(TESTSMANYONE) $(TESTSONEONE) $(SRCMANYONE) $(SRCONEONE)
 	$(CC) $(CFLAGS) -c $(TESTSONEONE) $(SRCONEONE) 
 	$(CC) unitTests.o $(OBJONEONE) -o unitTests
 	$(CC) lockTests.o $(OBJONEONE) -o lockTests
-	$(CC) matrix.o $(OBJONEONE) -o matrix 
-	@mv *.o unitTests lockTests matrix $(BINONEONE)
+	$(CC) benchmark.o $(OBJONEONE) -o benchmark 
+	$(CC) robust.o $(OBJONEONE) -o robust 
+	@mv *.o unitTests robust lockTests benchmark $(BINONEONE)
 	
 check-leak:
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes  --verbose \
