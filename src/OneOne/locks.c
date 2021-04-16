@@ -6,7 +6,6 @@
 #include <asm/prctl.h>
 #include <sys/prctl.h>
 #include "locks.h"
-#include "log.h"
 
 /**
  * @brief Initialize the spinlock object
@@ -14,14 +13,14 @@
  * @param lock Spinlock object
  * @return int 
  */
-int spin_init(spin_t* lock){
+int spin_init(spin_t *lock)
+{
     // log_debug("Lock initialzed");
     volatile int outval;
-    asm (
-       "movl $0x0,(%1);"
-       :"=r"(outval)
-       :"r"(lock)
-    );
+    asm(
+        "movl $0x0,(%1);"
+        : "=r"(outval)
+        : "r"(lock));
     return 0;
 }
 
@@ -31,7 +30,8 @@ int spin_init(spin_t* lock){
  * @param lock Spinlock object
  * @return int 
  */
-int spin_acquire(spin_t *lock){
+int spin_acquire(spin_t *lock)
+{
     // Atomically busy wait until the lock becomes available
     volatile int outval;
     asm(
@@ -39,9 +39,8 @@ int spin_acquire(spin_t *lock){
         "xchg   %%al, (%1);"
         "test %%al,%%al;"
         "jne whileloop;"
-        :"=r"(outval)
-        :"r"(lock)
-    );
+        : "=r"(outval)
+        : "r"(lock));
     return 0;
 }
 
@@ -51,13 +50,13 @@ int spin_acquire(spin_t *lock){
  * @param lock Spinlock object
  * @return int 
  */
-int spin_release(spin_t *lock){
+int spin_release(spin_t *lock)
+{
     volatile int outval;
     asm(
         "movl $0x0,(%1);"
-        :"=r"(outval)
-        :"r"(lock)
-    );
+        : "=r"(outval)
+        : "r"(lock));
     return 0;
 }
 
@@ -67,16 +66,15 @@ int spin_release(spin_t *lock){
  * @param lock Mutex Lock object
  * @return int 
  */
-int mutex_init(mutex_t *lock){
+int mutex_init(mutex_t *lock)
+{
     volatile int outval;
-    asm (
-       "movl $0x0,(%1);"
-       :"=r"(outval)
-       :"r"(lock)
-    );
+    asm(
+        "movl $0x0,(%1);"
+        : "=r"(outval)
+        : "r"(lock));
     return 0;
 }
-
 
 /**
  * @brief Atomically acquire the lock and wait by sleeping if not available
@@ -84,27 +82,24 @@ int mutex_init(mutex_t *lock){
  * @param lock Mutex Lock object
  * @return int 
  */
-int mutex_acquire(mutex_t *lock){
+int mutex_acquire(mutex_t *lock)
+{
     volatile int outval;
     asm(
         "mutexloop:"
         "mov    $1, %%eax;"
         "xchg   %%al, (%%rdi);"
-        "test %%al,%%al;" 
+        "test %%al,%%al;"
         "je endlabel"
-        :"=r"(outval)
-        :"r"(lock)
-    );  
-    syscall(SYS_futex , lock, FUTEX_WAIT, 1, NULL, NULL, 0);
+        : "=r"(outval)
+        : "r"(lock));
+    syscall(SYS_futex, lock, FUTEX_WAIT, 1, NULL, NULL, 0);
     asm(
-        "jmp mutexloop"
-    );
+        "jmp mutexloop");
     asm(
-        "endlabel:"
-    );
+        "endlabel:");
     return 0;
 }
-
 
 /**
  * @brief Release the lock object atomically and wake up waiting threads
@@ -112,13 +107,13 @@ int mutex_acquire(mutex_t *lock){
  * @param lock Mutex Lock object
  * @return int 
  */
-int mutex_release(mutex_t *lock){
+int mutex_release(mutex_t *lock)
+{
     volatile int outval;
     asm(
         "movl $0x0,(%1);"
-        :"=r"(outval)
-        :"r"(lock)
-    );
-    syscall(SYS_futex , lock, FUTEX_WAKE, 1, NULL, NULL, 0);
+        : "=r"(outval)
+        : "r"(lock));
+    syscall(SYS_futex, lock, FUTEX_WAKE, 1, NULL, NULL, 0);
     return 0;
 }

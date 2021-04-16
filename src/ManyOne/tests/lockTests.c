@@ -6,14 +6,13 @@
 #include "../thread.h"
 #endif
 #include "tests.h"
-#include "../log.h"
 #define WITH_LOCKS 1
 #define WITHOUT_LOCKS 0
 
 int spinTest = 0;
 short refstring[4];
 
-mut_t sleeplock;
+mutex_t sleeplock;
 spin_t spinlock;
 long c1, c2, c, run = 1;
 
@@ -58,7 +57,7 @@ void testLocks(int type)
     thread_join(t1, NULL);
     thread_join(t2, NULL);
 
-    log_trace("Value of global is %d", spinTest);
+    printf("Value of global is %d\n", spinTest);
     spinTest = 0;
 }
 
@@ -75,10 +74,10 @@ void *f1(void *lock)
     {
         // log_trace("f1 scheduled");
         c1++;
-        mutex_acquire((mut_t *)lock);
+        mutex_acquire((mutex_t *)lock);
         c++;
         // // log_trace("value of c: %d", c);
-        mutex_release((mut_t *)lock);
+        mutex_release((mutex_t *)lock);
     }
 }
 void *f2(void *lock)
@@ -87,15 +86,15 @@ void *f2(void *lock)
     {
         // log_trace("f2");
         c2++;
-        mutex_acquire((mut_t *)lock);
+        mutex_acquire((mutex_t *)lock);
         c++;
-        mutex_release((mut_t *)lock);
+        mutex_release((mutex_t *)lock);
     }
 }
 
 int testMutex()
 {
-    log_info("Starting test with Mutex");
+    printf("Starting test with Mutex\n");
     mutex_init(&sleeplock);
     thread t1, t2;
     thread_create(&t1, NULL, f1, (void *)&sleeplock);
@@ -106,7 +105,7 @@ int testMutex()
     run = 0;
     thread_join(t1, NULL);
     thread_join(t2, NULL);
-    log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n", c1 + c2, c);
+    printf("\nValues after test are (c1 + c2)=%ld c=%ld\n", c1 + c2, c);
     if (c1 + c2 - c > 2)
         printf(RED "Test failed\n" RESET);
     else
@@ -140,7 +139,7 @@ int testSpin()
     c2 = 0;
     run = 1;
     c = 0;
-    log_info("Starting test with Spinlocks");
+    printf("Starting test with Spinlocks\n");
     spin_init(&spinlock);
     thread t1, t2;
     thread_create(&t1, NULL, f1spin, (void *)&spinlock);
@@ -151,7 +150,7 @@ int testSpin()
     run = 0;
     thread_join(t1, NULL);
     thread_join(t2, NULL);
-    log_trace("\nValues after test are (c1 + c2)=%ld c=%ld\n", c1 + c2, c);
+    printf("\nValues after test are (c1 + c2)=%ld c=%ld\n", c1 + c2, c);
     if (c1 + c2 - c > 2)
         printf(RED "Test failed\n" RESET);
     else
@@ -161,7 +160,6 @@ int testSpin()
 
 int main()
 {
-    setbuf(stdout, NULL);
     printf("tlib Synchronization Tests\n");
     int i = 1;
     // printf(GREEN"\nTesting with Locks\n"RESET);

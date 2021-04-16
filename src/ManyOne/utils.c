@@ -1,8 +1,8 @@
 #define _GNU_SOURCE
 #include <signal.h>
+#include <stdio.h>
 #include <errno.h>
 #include "utils.h"
-#include "log.h"
 
 #define TGKILL 234
 
@@ -154,17 +154,14 @@ tcb *getNextThread(tcbQueue *t)
 
 tcb *getThread(tcbQueue *t, thread tid)
 {
-    if (t->front)
+    qnode *temp = t->front;
+    while (temp != NULL)
     {
-        qnode *temp = t->front;
-        while (temp != NULL)
+        if (temp->tcbnode->tid == tid)
         {
-            if (temp->tcbnode->tid == tid)
-            {
-                return temp->tcbnode;
-            }
-            temp = temp->next;
+            return temp->tcbnode;
         }
+        temp = temp->next;
     }
     return NULL;
 }
@@ -273,7 +270,7 @@ void removeExitedThreads(tcbQueue *t)
     return;
 }
 
-void unlockMutex(tcbQueue *t, mut_t *lock)
+void unlockMutex(tcbQueue *t, mutex_t *lock)
 {
     qnode *tmp = t->front;
     tcb **requeue = NULL;
