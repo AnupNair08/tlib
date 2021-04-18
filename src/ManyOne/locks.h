@@ -17,11 +17,19 @@
  * @brief Spin Lock object
  */
 
-typedef volatile int spin_t;
+typedef struct
+{
+    volatile int lock;
+    unsigned int locker;
+} spin_t;
 /**
  * @brief Mutex object
  */
-typedef volatile int mutex_t;
+typedef struct
+{
+    volatile int lock;
+    unsigned int locker;
+} mutex_t;
 
 // Spin lock APIs
 int spin_init(spin_t *);

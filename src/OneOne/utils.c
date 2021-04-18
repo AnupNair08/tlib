@@ -148,6 +148,21 @@ unsigned long int *returnCustomTidAddress(singlyLL *ll, unsigned long int tid)
     return NULL;
 }
 
+node *returnCustomNode(singlyLL *ll, unsigned long int tid)
+{
+    node *tmp = ll->head;
+    while (tmp != NULL)
+    {
+        // printf("returnCustomNode %d %d %d\n", tid, tmp->tid, tmp->tidCpy);
+        if (tmp->tidCpy == tid)
+        {
+            return tmp;
+        }
+        tmp = tmp->next;
+    }
+    return NULL;
+}
+
 /**
  * @brief Send process wide signal dispositions to all active threads
  * 
@@ -229,4 +244,25 @@ void *getReturnValue(singlyLL *l, unsigned long int tid)
         tmp = tmp->next;
     }
     return NULL;
+}
+
+void deleteAllThreads(singlyLL *l)
+{
+    node *tmp = l->head;
+    int *deleted = NULL;
+    int numDeleted = 0;
+    while (tmp)
+    {
+        if (tmp->exited)
+        {
+            deleted = (int *)realloc(deleted, (++numDeleted) * sizeof(int));
+            deleted[numDeleted - 1] = tmp->tidCpy;
+        }
+        tmp = tmp->next;
+    }
+    for (int i = 0; i < numDeleted; i++)
+    {
+        singlyLLDelete(l, deleted[i]);
+    }
+    free(deleted);
 }

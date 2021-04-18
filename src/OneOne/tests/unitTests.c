@@ -325,7 +325,6 @@ void testLock()
  */
 int main(int argc, char *argv[])
 {
-    setbuf(stdout, NULL);
     signal(SIGINT, globalhandle);
     printf("\nRunning Unit Tests\n");
     LINE;

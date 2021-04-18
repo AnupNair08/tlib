@@ -22,9 +22,10 @@
 #include "sighandler.h"
 spin_t globalLock;
 singlyLL __tidList;
+thread currTid;
 
-
-void cleanup(){
+void cleanup()
+{
     free(__tidList.head);
 }
 
@@ -39,17 +40,19 @@ static void init()
 
     sigset_t signalMask;
     sigfillset(&signalMask);
-    sigdelset(&signalMask,SIGINT);
-    sigdelset(&signalMask,SIGSTOP);
-    sigdelset(&signalMask,SIGCONT);
-    sigprocmask(SIG_BLOCK,&signalMask,NULL);
-    
+    sigdelset(&signalMask, SIGINT);
+    sigdelset(&signalMask, SIGSTOP);
+    sigdelset(&signalMask, SIGCONT);
+    sigprocmask(SIG_BLOCK, &signalMask, NULL);
+
     spin_acquire(&globalLock);
     singlyLLInit(&__tidList);
     node *insertedNode = singlyLLInsert(&__tidList, getpid());
+    insertedNode->exited = 0;
     spin_release(&globalLock);
-    
-    if(insertedNode == NULL){
+
+    if (insertedNode == NULL)
+    {
         printf("Thread address not found\n");
         spin_release(&globalLock);
         return;
@@ -112,20 +115,21 @@ static int wrap(void *fa)
 int thread_create(thread *t, void *attr, void *routine, void *arg)
 {
     static int initState = 0;
-    fflush(stdout);
-    
-    if(t == NULL || routine == NULL){
+    if (t == NULL || routine == NULL)
+    {
         return EINVAL;
     }
-    
+
     thread tid;
     void *thread_stack;
-    if(initState == 0){
+    if (initState == 0)
+    {
         initState = 1;
         init();
     }
     spin_acquire(&globalLock);
     node *insertedNode = singlyLLInsert(&__tidList, 0);
+    insertedNode->exited = 0;
     spin_release(&globalLock);
     if (insertedNode == NULL)
     {
@@ -201,11 +205,18 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
  * @param signum Signal number of the signal to be sent to the thread
  * @return int
  */
-int thread_kill(pid_t tid, int signum){
-    if(signum == 0){
+int thread_kill(pid_t tid, int signum)
+{
+    if (signum == 0)
+    {
         return -1;
     }
     int ret;
+    node *insertedNode = returnCustomNode(&__tidList, gettid());
+    if (insertedNode->exited)
+    {
+        return -1;
+    }
     if (signum == SIGINT || signum == SIGCONT || signum == SIGSTOP)
     {
         killAllThreads(&__tidList, signum);
@@ -235,10 +246,12 @@ int thread_kill(pid_t tid, int signum){
  * @param guard Size of guard pag
  * @return int
  */
-int thread_join(thread t, void **retLocation){
+int thread_join(thread t, void **retLocation)
+{
     spin_acquire(&globalLock);
     void *addr = returnCustomTidAddress(&__tidList, t);
-    if(addr == NULL){
+    if (addr == NULL)
+    {
         spin_release(&globalLock);
         return ESRCH;
     }
@@ -251,7 +264,9 @@ int thread_join(thread t, void **retLocation){
     int ret;
     while (*((pid_t *)addr) == t)
     {
+        spin_release(&globalLock);
         ret = syscall(SYS_futex, addr, FUTEX_WAIT, t, NULL, NULL, 0);
+        spin_acquire(&globalLock);
     }
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
     if (retLocation)
@@ -275,15 +290,15 @@ void thread_exit(void *ret)
     void *addr = returnCustomTidAddress(&__tidList, gettid());
     if (addr == NULL)
     {
-        // log_info("Thread already exited");
         return;
     }
     if (ret)
     {
         ret = getReturnValue(&__tidList, gettid());
     }
+    node *insertedNode = returnCustomNode(&__tidList, gettid());
+    insertedNode->exited = 1;
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-    // singlyLLDelete(&__tidList, gettid());
     kill(SIGINT, gettid());
     return;
 }

@@ -252,7 +252,6 @@ void attrroutine()
     puts("Thread spawned with all attributes");
 }
 // void testAttr(){
-//     fflush(stdout);
 //     TotalTests += 1;
 //     printf(BLUE"Testing thread_attr_*()\n\n"RESET);
 //     short err = 0;
@@ -324,7 +323,7 @@ void testLock()
  */
 int main(int argc, char *argv[])
 {
-    signal(SIGINT, globalhandle);
+    // signal(SIGINT, globalhandle);
     printf("\nRunning Unit Tests\n");
     LINE;
     testCreate();

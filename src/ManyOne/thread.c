@@ -31,7 +31,7 @@ unsigned long int __nextpid;
 // #define JB_PC 7
 
 // /* A translation is required when using an address of a variable.
-//    Use this as a black box in your code. 
+//    Use this as a black box in your code.
 //    This code was referenced from : https://sites.cs.ucsb.edu/~chris/teaching/cs170/projects/proj2.html*/
 // address_t translate_address(address_t addr)
 // {
@@ -247,7 +247,7 @@ static void initManyOne()
     ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
     // Schedulers context (has a new stack and PC)
     void *schedStack = allocStack(STACK_SZ, 0) + STACK_SZ;
-    createContext(ctx, scheduler,schedStack);
+    createContext(ctx, scheduler, schedStack);
     //
 
     // makecontext(thread_context, scheduler, 0);
@@ -264,16 +264,13 @@ static void initManyOne()
 void wrapRoutine()
 {
     WRAP_SIGNALS;
-    // raiseSignals();
     funcargs *temp = __curproc->args;
     enabletimer();
     (temp->f)(temp->arg);
     disabletimer();
     __curproc->exited = 1;
     free(temp);
-    enabletimer();
     switchToScheduler();
-    // while(1){}
 }
 
 /**
@@ -312,18 +309,18 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
         if (((thread_attr *)attr)->stack)
         {
             ctx[0]->__jmpbuf[JB_SP] = translate_address((address_t)((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
-            createContext(ctx, wrapRoutine,((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
+            createContext(ctx, wrapRoutine, ((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
         }
         else if (((thread_attr *)attr)->stackSize)
         {
             temp->stack = allocStack(((thread_attr *)attr)->stackSize, 0);
-            createContext(ctx,wrapRoutine,temp->stack + ((thread_attr *)attr)->stackSize);
+            createContext(ctx, wrapRoutine, temp->stack + ((thread_attr *)attr)->stackSize);
         }
     }
     else
     {
         temp->stack = allocStack(STACK_SZ, 0) + STACK_SZ;
-        createContext(ctx, wrapRoutine,temp->stack);
+        createContext(ctx, wrapRoutine, temp->stack);
     }
 
     initTcb(temp, RUNNABLE, __nextpid++, ctx);

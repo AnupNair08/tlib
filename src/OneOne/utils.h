@@ -12,9 +12,10 @@
  * @brief Arguments passed to the wrapper function
  * 
  */
-typedef struct funcargs{
+typedef struct funcargs
+{
     void (*f)(void *);
-    void* arg;
+    void *arg;
     void *stack;
 } funcargs;
 
@@ -22,11 +23,13 @@ typedef struct funcargs{
  * @brief Node in the TCB of the thread
  * 
  */
-typedef struct node{
+typedef struct node
+{
     unsigned long int tid;
     unsigned long int tidCpy;
-    void* retVal;
-    struct node* next;
+    void *retVal;
+    int exited;
+    struct node *next;
     funcargs *fa;
 } node;
 
@@ -34,29 +37,32 @@ typedef struct node{
  * @brief Singly Linked List of TCBs
  * 
  */
-typedef struct singlyLL{
+typedef struct singlyLL
+{
     node *head;
     node *tail;
 } singlyLL;
 
-
 // Linked List related operations
 
-int singlyLLInit(singlyLL*);
+int singlyLLInit(singlyLL *);
 
-node* singlyLLInsert(singlyLL*, unsigned long int);
+node *singlyLLInsert(singlyLL *, unsigned long int);
 
-int singlyLLDelete(singlyLL*, unsigned long int);
+int singlyLLDelete(singlyLL *, unsigned long int);
 
-unsigned long int* returnTailTidAddress(singlyLL*);
+unsigned long int *returnTailTidAddress(singlyLL *);
 
-unsigned long int* returnCustomTidAddress(singlyLL*, unsigned long int);
+unsigned long int *returnCustomTidAddress(singlyLL *, unsigned long int);
 
 void persistTid(singlyLL *, unsigned long int);
 
-int killAllThreads(singlyLL*, int signum);
+int killAllThreads(singlyLL *, int signum);
 
-void* getReturnValue(singlyLL *, unsigned long int);
+void printAllNodes(singlyLL *);
 
+void *getReturnValue(singlyLL *, unsigned long int);
 
+node *returnCustomNode(singlyLL *, unsigned long int);
 
+void deleteAllThreads(singlyLL *);
