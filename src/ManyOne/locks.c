@@ -43,10 +43,6 @@ int spin_init(spin_t *lock)
 int spin_acquire(spin_t *lock)
 {
     int outval;
-    if (lock->locker != __curproc->tid)
-    {
-        return ENOTRECOVERABLE;
-    }
     volatile int *lockvar = &(lock->lock);
     asm(
         "whileloop:"
@@ -116,11 +112,6 @@ int mutex_acquire(mutex_t *lock)
 {
     volatile int outval;
     disabletimer();
-    if (lock->locker != __curproc->tid)
-    {
-        enabletimer();
-        return ENOTRECOVERABLE;
-    }
     volatile int *lockvar = &(lock->lock);
     asm(
         "xchg   %%al,(%1);"
