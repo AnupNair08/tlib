@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -g -DLOG_USE_COLOR -ggdb3
+CFLAGS := -g -ggdb3
 SUBDIRS := doxygen bin bin/ManyOne bin/OneOne
 SRCMANYONE := src/ManyOne/*.c
 SRCONEONE := src/OneOne/*.c
