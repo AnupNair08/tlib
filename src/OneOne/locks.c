@@ -72,6 +72,11 @@ int spin_release(spin_t *lock)
     return 0;
 }
 
+int spin_trylock(spin_t *lock)
+{
+    return lock->locker == 0 ? 0 : EBUSY;
+}
+
 /**
  * @brief Initialize the mutex lock object 
  * 
@@ -138,4 +143,9 @@ int mutex_release(mutex_t *lock)
     lock->locker = 0;
     syscall(SYS_futex, lock, FUTEX_WAKE, 1, NULL, NULL, 0);
     return 0;
+}
+
+int mutex_trylock(mutex_t *lock)
+{
+    return lock->locker == 0 ? 0 : EBUSY;
 }

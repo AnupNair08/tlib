@@ -37,6 +37,7 @@ int spin_init(spin_t *);
 int spin_acquire(spin_t *);
 
 int spin_release(spin_t *);
+int spin_trylock(spin_t *);
 
 // Mutex lock APIs
 int mutex_init(mutex_t *);
@@ -44,3 +45,4 @@ int mutex_init(mutex_t *);
 int mutex_acquire(mutex_t *);
 
 int mutex_release(mutex_t *);
+int mutex_trylock(mutex_t *);

@@ -82,6 +82,21 @@ int spin_release(spin_t *lock)
     return 0;
 }
 
+int spin_trylock(spin_t *lock)
+{
+    disabletimer();
+    if (lock->locker)
+    {
+        enabletimer();
+        return EBUSY;
+    }
+    else
+    {
+        enabletimer();
+        return 0;
+    }
+}
+
 /**
  * @brief Initialize the mutex lock object 
  * 
@@ -152,4 +167,19 @@ int mutex_release(mutex_t *lock)
     unlockMutex(&__allThreads, lock);
     lock->locker = 0;
     enabletimer();
+}
+
+int mutex_trylock(mutex_t *lock)
+{
+    disabletimer();
+    if (lock->locker)
+    {
+        enabletimer();
+        return EBUSY;
+    }
+    else
+    {
+        enabletimer();
+        return 0;
+    }
 }

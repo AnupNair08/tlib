@@ -15,19 +15,53 @@
 #include "tests.h"
 
 mutex_t lock;
+spin_t splock;
 
 void routine1()
 {
     mutex_acquire(&lock);
+    printf("[Thread 1] Acquiring a lock and waiting\n");
+    sleep(1);
+    mutex_release(&lock);
 }
 
 void routine2()
 {
+    printf("[Thread 2] Trying to release lock acquired by thread 1\n");
     int ret = mutex_release(&lock);
     if (ret == ENOTRECOVERABLE)
     {
-        printf("Test passed");
+        TESTPASS
     }
+    else
+    {
+        TESTFAIL
+    }
+}
+void rout1()
+{
+    printf("In t1\n");
+    spin_acquire(&splock);
+    // if (spin_trylock(&splock) == EBUSY)
+    // {
+    //     printf("Lock is busy\n");
+    // }
+    sleep(1);
+    spin_release(&splock);
+}
+void rout2()
+{
+    printf("In t2\n");
+    if (spin_trylock(&splock) == EBUSY)
+    {
+        printf("Lock is busy\n");
+    }
+    else
+    {
+        spin_acquire(&splock);
+        printf("Critcal Section\n");
+    }
+    spin_release(&splock);
 }
 
 int main()
@@ -38,5 +72,10 @@ int main()
     thread_create(&t2, NULL, routine2, NULL);
     thread_join(t1, NULL);
     thread_join(t2, NULL);
+    thread t3, t4;
+    spin_init(&splock);
+    thread_create(&t3, NULL, rout1, NULL);
+    thread_create(&t4, NULL, rout2, NULL);
+    thread_join(t3, NULL);
     return 0;
 }
