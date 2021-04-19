@@ -38,10 +38,6 @@ int spin_acquire(spin_t *lock)
 {
     // Atomically busy wait until the lock becomes available
     int outval;
-    if (lock->locker != gettid())
-    {
-        return ENOTRECOVERABLE;
-    }
     volatile int *lockvar = &(lock->lock);
     asm(
         "whileloop:"
@@ -103,10 +99,6 @@ int mutex_init(mutex_t *lock)
 int mutex_acquire(mutex_t *lock)
 {
     volatile int outval;
-    if (lock->locker != gettid())
-    {
-        return ENOTRECOVERABLE;
-    }
     volatile int *lockvar = &(lock->lock);
     asm(
         "mutexloop:"
