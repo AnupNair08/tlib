@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/mman.h>
 #include "utils.h"
 
 #define TGKILL 234
@@ -46,7 +47,10 @@ int removeThread(tcbQueue *t, unsigned long int tid)
             reQueueList[numRequeue - 1] = t->front->tcbnode->waiters[j];
         }
         t->front = tmp->next;
-        free(tmp->tcbnode->stack);
+        if (munmap(tmp->tcbnode->stack, STACK_SZ + getpagesize()))
+        {
+            return errno;
+        }
         if (t->front == NULL)
         {
             t->back = NULL;
@@ -79,7 +83,10 @@ int removeThread(tcbQueue *t, unsigned long int tid)
                     reQueueList = (thread *)realloc(reQueueList, ++numRequeue * sizeof(thread));
                     reQueueList[numRequeue - 1] = tmp->next->tcbnode->waiters[j];
                 }
-                free(tmp->next->tcbnode->stack);
+                if (munmap(tmp->next->tcbnode->stack, STACK_SZ + getpagesize()))
+                {
+                    return errno;
+                }
                 qnode *delNode = tmp->next;
                 if (delNode == t->back)
                 {

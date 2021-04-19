@@ -28,7 +28,6 @@ typedef struct node
     unsigned long int tid;
     unsigned long int tidCpy;
     void *retVal;
-    int exited;
     struct node *next;
     funcargs *fa;
 } node;
