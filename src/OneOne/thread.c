@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <linux/futex.h>
+#include <linux/unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
@@ -26,6 +27,7 @@ thread currTid;
 
 void cleanup()
 {
+    deleteAllThreads(&__tidList);
     free(__tidList.head);
 }
 
@@ -48,17 +50,11 @@ static void init()
     spin_acquire(&globalLock);
     singlyLLInit(&__tidList);
     node *insertedNode = singlyLLInsert(&__tidList, getpid());
-    insertedNode->exited = 0;
-    spin_release(&globalLock);
-
-    if (insertedNode == NULL)
-    {
-        printf("Thread address not found\n");
-        spin_release(&globalLock);
-        return;
-    }
-    insertedNode->tidCpy = getpid();
+    insertedNode->tidCpy = insertedNode->tid;
+    insertedNode->fa = NULL;
     atexit(cleanup);
+    spin_release(&globalLock);
+    return;
 }
 
 /**
@@ -72,8 +68,15 @@ static void *allocStack(size_t size, size_t guard)
 {
     void *stack = NULL;
     //Align the memory to a 64 bit compatible page size and associate a guard area for the stack
-    if (posix_memalign(&stack, GUARD_SZ, size + guard) || mprotect(stack, guard, PROT_NONE))
+    stack = mmap(NULL, size + guard, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+    if (stack == MAP_FAILED)
     {
+        perror("Stack Allocation");
+        return NULL;
+    }
+    if (mprotect(stack, guard, PROT_NONE))
+    {
+        munmap(stack, size + guard);
         perror("Stack Allocation");
         return NULL;
     }
@@ -129,7 +132,6 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
     }
     spin_acquire(&globalLock);
     node *insertedNode = singlyLLInsert(&__tidList, 0);
-    insertedNode->exited = 0;
     spin_release(&globalLock);
     if (insertedNode == NULL)
     {
@@ -212,8 +214,8 @@ int thread_kill(pid_t tid, int signum)
         return -1;
     }
     int ret;
-    node *insertedNode = returnCustomNode(&__tidList, gettid());
-    if (insertedNode->exited)
+    node *insertedNode = returnCustomNode(&__tidList, tid);
+    if (insertedNode->tid == 0)
     {
         return -1;
     }
@@ -257,7 +259,6 @@ int thread_join(thread t, void **retLocation)
     }
     if (*((pid_t *)addr) == 0)
     {
-        singlyLLDelete(&__tidList, t);
         spin_release(&globalLock);
         return EINVAL;
     }
@@ -271,10 +272,8 @@ int thread_join(thread t, void **retLocation)
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
     if (retLocation)
     {
-        // printf("Return value %x %x\n", *retLocation, retLocation);
         *retLocation = getReturnValue(&__tidList, t);
     }
-    singlyLLDelete(&__tidList, t);
     spin_release(&globalLock);
     return ret;
 }
@@ -297,8 +296,6 @@ void thread_exit(void *ret)
         ret = getReturnValue(&__tidList, gettid());
     }
     node *insertedNode = returnCustomNode(&__tidList, gettid());
-    insertedNode->exited = 1;
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-    kill(SIGINT, gettid());
     return;
 }
