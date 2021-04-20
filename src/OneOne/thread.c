@@ -215,10 +215,6 @@ int thread_kill(pid_t tid, int signum)
     }
     int ret;
     node *insertedNode = returnCustomNode(&__tidList, tid);
-    if (insertedNode->tid == 0)
-    {
-        return -1;
-    }
     if (signum == SIGINT || signum == SIGCONT || signum == SIGSTOP)
     {
         killAllThreads(&__tidList, signum);
@@ -230,6 +226,10 @@ int thread_kill(pid_t tid, int signum)
             return ret;
         }
         return ret;
+    }
+    if (insertedNode->tid == 0)
+    {
+        return -1;
     }
     pid_t pid = getpid();
     ret = syscall(TGKILL, pid, tid, signum);

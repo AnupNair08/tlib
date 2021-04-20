@@ -275,6 +275,11 @@ void wrapRoutine()
  */
 int thread_create(thread *t, void *attr, void *routine, void *arg)
 {
+    // Handle errors
+    if (t == NULL || routine == NULL)
+    {
+        return EINVAL;
+    }
     // Disable any switches during creation
     disabletimer();
     // Initalise the state of the main thread
@@ -345,9 +350,9 @@ int thread_join(thread t, void **retLocation)
     if (waitedThread->exited)
     {
         if (retLocation)
-            *retLocation = (void *)0;
+            *retLocation = (void *)EINVAL;
         enabletimer();
-        return 0;
+        return EINVAL;
     }
     //Add thread to the list of waiters
     waitedThread->waiters = (int *)realloc(waitedThread->waiters, (++(waitedThread->numWaiters)) * sizeof(int));
@@ -370,6 +375,10 @@ int thread_join(thread t, void **retLocation)
  */
 int thread_kill(pid_t t, int signum)
 {
+    if (signum <= 0)
+    {
+        return -1;
+    }
     int ret = 0;
     disabletimer();
     if (signum == SIGINT || signum == SIGCONT || signum == SIGSTOP)

@@ -71,6 +71,7 @@ void rout3()
 
 int main()
 {
+    // -------------------------------------------------------------------------------------------------------------------------
     thread t;
     printf("Creating threads with invalid arguments\n");
     if (thread_create(NULL, NULL, NULL, NULL) == EINVAL && thread_create(&t, NULL, NULL, NULL) == EINVAL && thread_create(NULL, NULL, func, NULL) == EINVAL)
@@ -82,12 +83,13 @@ int main()
         TESTFAIL
     }
 
+    // -------------------------------------------------------------------------------------------------------------------------
     printf("Joining thread in invalid cases\n");
     thread_create(&t, NULL, func, NULL);
     // Already joined thread
     thread_join(t, NULL);
     // Rejoin or give random TID
-    if (thread_join(t, NULL) == ESRCH && thread_join(231, NULL) == ESRCH)
+    if (thread_join(t, NULL) == EINVAL && thread_join(231, NULL) == ESRCH)
     {
         TESTPASS
     }
@@ -96,13 +98,15 @@ int main()
         TESTFAIL
     }
 
+    // -------------------------------------------------------------------------------------------------------------------------
     printf("Sending invalid signal\n");
     if (thread_kill(t, 0) == -1)
         TESTPASS
     else
         TESTFAIL
 
-    printf("Locking primitives test\n");
+    // -------------------------------------------------------------------------------------------------------------------------
+    printf("Releasing lock without acquiring\n");
     thread t1, t2;
     mutex_init(&lock);
     thread_create(&t1, NULL, routine1, NULL);
@@ -110,6 +114,7 @@ int main()
     thread_join(t1, NULL);
     thread_join(t2, NULL);
 
+    // -------------------------------------------------------------------------------------------------------------------------
     printf("Testing trylock\n");
     spin_init(&splock);
     thread t3, t4, t5, t6;
@@ -122,5 +127,8 @@ int main()
     thread_create(&t6, NULL, rout3, NULL);
     thread_join(t5, NULL);
     printf("Without trylock value value of i: %d\n", i);
+
+    // -------------------------------------------------------------------------------------------------------------------------
+
     return 0;
 }
