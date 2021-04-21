@@ -46,7 +46,7 @@ int spin_acquire(spin_t *lock)
         "jne whileloop;"
         : "=r"(outval)
         : "r"(lockvar));
-    lock->locker = gettid();
+    // lock->locker = gettid();
     return 0;
 }
 
@@ -59,10 +59,10 @@ int spin_acquire(spin_t *lock)
 int spin_release(spin_t *lock)
 {
     int outval;
-    if (lock->locker != gettid())
-    {
-        return ENOTRECOVERABLE;
-    }
+    // if (lock->locker != gettid())
+    // {
+    //     return ENOTRECOVERABLE;
+    // }
     volatile int *lockvar = &(lock->lock);
     asm(
         "movl $0x0,(%1);"
@@ -118,7 +118,7 @@ int mutex_acquire(mutex_t *lock)
         "jmp mutexloop");
     asm(
         "endlabel:");
-    lock->locker = gettid();
+    // lock->locker = gettid();
     return 0;
 }
 
@@ -131,10 +131,10 @@ int mutex_acquire(mutex_t *lock)
 int mutex_release(mutex_t *lock)
 {
     volatile int outval;
-    if (lock->locker != gettid())
-    {
-        return ENOTRECOVERABLE;
-    }
+    // if (lock->locker != gettid())
+    // {
+    //     return ENOTRECOVERABLE;
+    // }
     volatile int *lockvar = &(lock->lock);
     asm(
         "movl $0x0,(%1);"

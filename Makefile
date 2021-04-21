@@ -34,18 +34,21 @@ tlib: $(SRCONEONE) $(SRCMANYONE)
 # All binaries and executable files get stored in bin/ directory
 alltest: $(TESTSMANYONE) $(TESTSONEONE) $(SRCMANYONE) $(SRCONEONE)
 	$(CC) $(CFLAGS) -c $(TESTSMANYONE) $(SRCMANYONE) 
-	$(CC) -g manyTests.o $(OBJMANYONE) -o manyTests
+	$(CC) manyTests.o $(OBJMANYONE) -o manyTests
 	$(CC) unitTests.o $(OBJMANYONE) -o unitTests
-	$(CC) -g lockTests.o $(OBJMANYONE) -o lockTests
+	$(CC) lockTests.o $(OBJMANYONE) -o lockTests
 	$(CC) robust.o $(OBJMANYONE) -o robust 
 	$(CC) matrix.o $(OBJMANYONE) -o matrix 
-	@mv *.o unitTests lockTests matrix manyTests robust $(BINMANYONE)
+	$(CC) readers.o $(OBJONEONE) -o readers 
+
+	@mv *.o unitTests lockTests matrix manyTests robust readers $(BINMANYONE)
 	$(CC) $(CFLAGS) -c $(TESTSONEONE) $(SRCONEONE) 
 	$(CC) unitTests.o $(OBJONEONE) -o unitTests
 	$(CC) lockTests.o $(OBJONEONE) -o lockTests
 	$(CC) benchmark.o $(OBJONEONE) -o benchmark 
 	$(CC) robust.o $(OBJONEONE) -o robust 
-	@mv *.o unitTests robust lockTests benchmark $(BINONEONE)
+	$(CC) readers.o $(OBJONEONE) -o readers 
+	@mv *.o unitTests robust lockTests benchmark readers $(BINONEONE)
 	
 check-leak:
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes  --verbose \

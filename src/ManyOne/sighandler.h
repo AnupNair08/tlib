@@ -15,6 +15,11 @@
 #define BLUE "\033[1;34m"
 
 /**
+ * @brief TCB of current running process 
+ */
+extern tcb *__curproc;
+
+/**
  * @brief Default signal handlers for signals sent via thread_kill()
  * 
  * @param signum Signal number to be sent
@@ -22,7 +27,7 @@
 void TLIB_SIG_HANDLER(int signum)
 {
     printf(RED "Dispatched Signal\n" RESET);
-    printf("Thread specific signal handled\n");
+    printf("Thread tid %ld handled signal\n", __curproc->tid);
 }
 
 #define WRAP_SIGNALS                   \

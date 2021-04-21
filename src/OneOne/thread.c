@@ -39,21 +39,17 @@ static void init()
 {
     printf("Library initialised\n");
     spin_init(&globalLock);
-
     sigset_t signalMask;
     sigfillset(&signalMask);
     sigdelset(&signalMask, SIGINT);
     sigdelset(&signalMask, SIGSTOP);
     sigdelset(&signalMask, SIGCONT);
     sigprocmask(SIG_BLOCK, &signalMask, NULL);
-
-    spin_acquire(&globalLock);
     singlyLLInit(&__tidList);
     node *insertedNode = singlyLLInsert(&__tidList, getpid());
     insertedNode->tidCpy = insertedNode->tid;
     insertedNode->fa = NULL;
     atexit(cleanup);
-    spin_release(&globalLock);
     return;
 }
 
@@ -117,12 +113,13 @@ static int wrap(void *fa)
  */
 int thread_create(thread *t, void *attr, void *routine, void *arg)
 {
+    spin_acquire(&globalLock);
     static int initState = 0;
     if (t == NULL || routine == NULL)
     {
+        spin_release(&globalLock);
         return EINVAL;
     }
-
     thread tid;
     void *thread_stack;
     if (initState == 0)
@@ -130,12 +127,11 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
         initState = 1;
         init();
     }
-    spin_acquire(&globalLock);
     node *insertedNode = singlyLLInsert(&__tidList, 0);
-    spin_release(&globalLock);
     if (insertedNode == NULL)
     {
         printf("Thread address not found\n");
+        spin_release(&globalLock);
         return -1;
     }
     funcargs *fa;
@@ -143,6 +139,7 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
     if (!fa)
     {
         printf("Malloc failed\n");
+        spin_release(&globalLock);
         return -1;
     }
     fa->f = routine;
@@ -154,6 +151,7 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
         if (!thread_stack)
         {
             perror("tlib create");
+            spin_release(&globalLock);
             return errno;
         }
         fa->stack = attr_t->stack == NULL ? thread_stack : attr_t->stack;
@@ -164,10 +162,8 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
                     &(insertedNode->tid),
                     NULL,
                     &(insertedNode->tid));
-        spin_acquire(&globalLock);
         insertedNode->tidCpy = tid;
         insertedNode->fa = fa;
-        spin_release(&globalLock);
     }
     else
     {
@@ -175,6 +171,7 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
         if (!thread_stack)
         {
             perror("tlib create");
+            spin_release(&globalLock);
             return errno;
         }
         fa->stack = thread_stack;
@@ -185,18 +182,18 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
                     &(insertedNode->tid),
                     NULL,
                     &(insertedNode->tid));
-        spin_acquire(&globalLock);
         insertedNode->tidCpy = tid;
         insertedNode->fa = fa;
-        spin_release(&globalLock);
     }
     if (tid == -1)
     {
         perror("tlib create");
         free(thread_stack);
+        spin_release(&globalLock);
         return errno;
     }
     *t = tid;
+    spin_release(&globalLock);
     return 0;
 }
 
@@ -286,9 +283,11 @@ int thread_join(thread t, void **retLocation)
  */
 void thread_exit(void *ret)
 {
+    spin_acquire(&globalLock);
     void *addr = returnCustomTidAddress(&__tidList, gettid());
     if (addr == NULL)
     {
+        spin_release(&globalLock);
         return;
     }
     if (ret)
@@ -297,5 +296,6 @@ void thread_exit(void *ret)
     }
     node *insertedNode = returnCustomNode(&__tidList, gettid());
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
+    spin_release(&globalLock);
     return;
 }
