@@ -2,10 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <sys/mman.h>
 #include "utils.h"
+#include "tlib.h"
 
 #define TGKILL 234
 
@@ -63,16 +66,6 @@ node *singlyLLInsert(singlyLL *ll, unsigned long int tid)
  */
 int singlyLLDelete(singlyLL *ll, unsigned long int tid)
 {
-    node *tmp1 = ll->head;
-#ifdef DEV
-    printf("LL status before del and tid is %d\n", tid);
-    while (tmp1)
-    {
-        printf("%ld \n", tmp1->tidCpy);
-        tmp1 = tmp1->next;
-    }
-    puts("");
-#endif // !DEV
     node *tmp = ll->head;
     if (tmp == NULL)
     {
@@ -81,8 +74,13 @@ int singlyLLDelete(singlyLL *ll, unsigned long int tid)
     if (tmp->tidCpy == tid)
     {
         ll->head = ll->head->next;
-        if (tmp->fa->stack)
-            free(tmp->fa->stack);
+        if (tmp->fa)
+        {
+            if (munmap(tmp->fa->stack, STACK_SZ + getpagesize()))
+            {
+                return errno;
+            }
+        }
         free(tmp->fa);
         free(tmp);
         if (ll->head == NULL)
@@ -100,8 +98,13 @@ int singlyLLDelete(singlyLL *ll, unsigned long int tid)
             {
                 ll->tail = tmp;
             }
-            if (tmp->next->fa->stack)
-                free(tmp->next->fa->stack);
+            if (tmp->next->fa)
+            {
+                if (munmap(tmp->next->fa->stack, STACK_SZ + getpagesize()))
+                {
+                    return errno;
+                }
+            }
             free(tmp->next->fa);
             free(tmp->next);
             tmp->next = tmpNext;
@@ -142,6 +145,21 @@ unsigned long int *returnCustomTidAddress(singlyLL *ll, unsigned long int tid)
         if (tmp->tidCpy == tid)
         {
             return &(tmp->tid);
+        }
+        tmp = tmp->next;
+    }
+    return NULL;
+}
+
+node *returnCustomNode(singlyLL *ll, unsigned long int tid)
+{
+    node *tmp = ll->head;
+    while (tmp != NULL)
+    {
+        // printf("returnCustomNode %d %d %d\n", tid, tmp->tid, tmp->tidCpy);
+        if (tmp->tidCpy == tid)
+        {
+            return tmp;
         }
         tmp = tmp->next;
     }
@@ -203,7 +221,11 @@ void printAllNodes(singlyLL *l)
     node *tmp = l->head;
     while (tmp)
     {
-        printf("tid%ld tidCpy%ld-->", tmp->tid, tmp->tidCpy);
+        if (tmp->fa)
+        {
+            printf("tid%ld tidCpy%ld-->", tmp->tid, tmp->tidCpy);
+            fflush(stdout);
+        }
         tmp = tmp->next;
     }
     printf("\n");
@@ -229,4 +251,25 @@ void *getReturnValue(singlyLL *l, unsigned long int tid)
         tmp = tmp->next;
     }
     return NULL;
+}
+
+void deleteAllThreads(singlyLL *l)
+{
+    node *tmp = l->head;
+    int *deleted = NULL;
+    int numDeleted = 0;
+    while (tmp)
+    {
+        if (tmp->tid == 0)
+        {
+            deleted = (int *)realloc(deleted, (++numDeleted) * sizeof(int));
+            deleted[numDeleted - 1] = tmp->tidCpy;
+        }
+        tmp = tmp->next;
+    }
+    for (int i = 0; i < numDeleted; i++)
+    {
+        singlyLLDelete(l, deleted[i]);
+    }
+    free(deleted);
 }

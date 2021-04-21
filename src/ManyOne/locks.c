@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "errno.h"
 
 /**
  * @brief TCB of current running process 
@@ -22,10 +23,14 @@ extern tcbQueue __allThreads;
 int spin_init(spin_t *lock)
 {
     volatile int outval;
+    volatile int *lockvar = &(lock->lock);
+    disabletimer();
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
+    lock->locker = 0;
+    enabletimer();
     return 0;
 }
 
@@ -38,13 +43,17 @@ int spin_init(spin_t *lock)
 int spin_acquire(spin_t *lock)
 {
     int outval;
+    volatile int *lockvar = &(lock->lock);
     asm(
         "whileloop:"
         "xchg   %%al, (%1);"
         "test   %%al,%%al;"
         "jne whileloop;"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
+    disabletimer();
+    lock->locker = __curproc->tid;
+    enabletimer();
     return 0;
 }
 
@@ -56,12 +65,36 @@ int spin_acquire(spin_t *lock)
  */
 int spin_release(spin_t *lock)
 {
+    disabletimer();
     int outval;
+    if (lock->locker != __curproc->tid)
+    {
+        enabletimer();
+        return ENOTRECOVERABLE;
+    }
+    volatile int *lockvar = &(lock->lock);
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
+    lock->locker = 0;
+    enabletimer();
     return 0;
+}
+
+int spin_trylock(spin_t *lock)
+{
+    disabletimer();
+    if (lock->locker)
+    {
+        enabletimer();
+        return EBUSY;
+    }
+    else
+    {
+        enabletimer();
+        return 0;
+    }
 }
 
 /**
@@ -72,11 +105,15 @@ int spin_release(spin_t *lock)
  */
 int mutex_init(mutex_t *lock)
 {
+    volatile int *lockvar = &(lock->lock);
     int outval;
+    disabletimer();
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
+    lock->locker = 0;
+    enabletimer();
     return 0;
 }
 
@@ -89,19 +126,21 @@ int mutex_init(mutex_t *lock)
 int mutex_acquire(mutex_t *lock)
 {
     volatile int outval;
+    disabletimer();
+    volatile int *lockvar = &(lock->lock);
     asm(
         "xchg   %%al,(%1);"
         "test   %%al, %%al;"
         "je endlabel;"
         : "=r"(outval)
-        : "r"(lock)
+        : "r"(lockvar)
         : "%ebx");
-    disabletimer();
     __curproc->mutexWait = lock;
     __curproc->thread_state = WAITING;
     switchToScheduler();
     asm(
         "endlabel:");
+    lock->locker = __curproc->tid;
     enabletimer();
 }
 
@@ -114,11 +153,33 @@ int mutex_acquire(mutex_t *lock)
 int mutex_release(mutex_t *lock)
 {
     disabletimer();
+    if (lock->locker != __curproc->tid)
+    {
+        enabletimer();
+        return ENOTRECOVERABLE;
+    }
+    volatile int *lockvar = &(lock->lock);
     int outval;
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
     unlockMutex(&__allThreads, lock);
+    lock->locker = 0;
     enabletimer();
+}
+
+int mutex_trylock(mutex_t *lock)
+{
+    disabletimer();
+    if (lock->locker)
+    {
+        enabletimer();
+        return EBUSY;
+    }
+    else
+    {
+        enabletimer();
+        return 0;
+    }
 }

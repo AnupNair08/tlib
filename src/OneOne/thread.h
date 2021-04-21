@@ -9,7 +9,7 @@
  * 
  */
 #define _GNU_SOURCE
-#include<unistd.h>
+#include <unistd.h>
 /**
  * @brief Thread object
  */
@@ -21,38 +21,40 @@ typedef volatile int spin_t;
 /**
  * @brief Attribute Object for threads 
  */
-typedef struct thread_attr {
+typedef struct thread_attr
+{
     void *stack;
     size_t guardSize;
     size_t stackSize;
 } thread_attr;
 
 // Thread related APIs
-int thread_create(thread *,void *, void *,void *);
-int thread_join(thread , void **);
+int thread_create(thread *, void *, void *, void *);
+int thread_join(thread, void **);
 int thread_kill(pid_t t, int);
 void thread_exit(void *);
 
 // Spin lock related APIs
-int spin_init(spin_t*);
-int spin_acquire(spin_t*);
-int spin_release(spin_t*);
+int spin_init(spin_t *);
+int spin_acquire(spin_t *);
+int spin_release(spin_t *);
+int spin_trylock(spin_t *);
 
 typedef volatile int mutex_t;
 // Mutex related APIs
 int mutex_init(mutex_t *);
 int mutex_acquire(mutex_t *);
 int mutex_release(mutex_t *);
+int mutex_trylock(mutex_t *);
 
 // Thread attribute handler APIs
 int thread_attr_init(thread_attr *);
 int thread_attr_destroy(thread_attr *);
 
 size_t thread_attr_getStack(thread_attr *);
-int thread_attr_setStack(thread_attr *,size_t);
+int thread_attr_setStack(thread_attr *, size_t);
 
 size_t thread_attr_getGuard(thread_attr *);
-int thread_attr_setGuard(thread_attr *,size_t);
+int thread_attr_setGuard(thread_attr *, size_t);
 
-int thread_attr_setStackAddr(thread_attr *, void *,size_t);
-
+int thread_attr_setStackAddr(thread_attr *, void *, size_t);

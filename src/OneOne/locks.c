@@ -5,7 +5,10 @@
 #include <assert.h>
 #include <asm/prctl.h>
 #include <sys/prctl.h>
+#include <sys/types.h>
+#include <errno.h>
 #include "locks.h"
+#define gettid() syscall(SYS_gettid)
 
 /**
  * @brief Initialize the spinlock object
@@ -15,12 +18,13 @@
  */
 int spin_init(spin_t *lock)
 {
-    // log_debug("Lock initialzed");
     volatile int outval;
+    volatile int *lockvar = &(lock->lock);
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
+    lock->locker = 0;
     return 0;
 }
 
@@ -33,14 +37,16 @@ int spin_init(spin_t *lock)
 int spin_acquire(spin_t *lock)
 {
     // Atomically busy wait until the lock becomes available
-    volatile int outval;
+    int outval;
+    volatile int *lockvar = &(lock->lock);
     asm(
         "whileloop:"
         "xchg   %%al, (%1);"
-        "test %%al,%%al;"
+        "test   %%al,%%al;"
         "jne whileloop;"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
+    lock->locker = gettid();
     return 0;
 }
 
@@ -52,12 +58,23 @@ int spin_acquire(spin_t *lock)
  */
 int spin_release(spin_t *lock)
 {
-    volatile int outval;
+    int outval;
+    if (lock->locker != gettid())
+    {
+        return ENOTRECOVERABLE;
+    }
+    volatile int *lockvar = &(lock->lock);
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
+    lock->locker = 0;
     return 0;
+}
+
+int spin_trylock(spin_t *lock)
+{
+    return lock->locker == 0 ? 0 : EBUSY;
 }
 
 /**
@@ -68,11 +85,13 @@ int spin_release(spin_t *lock)
  */
 int mutex_init(mutex_t *lock)
 {
-    volatile int outval;
+    volatile int *lockvar = &(lock->lock);
+    int outval;
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
+    lock->locker = 0;
     return 0;
 }
 
@@ -85,6 +104,7 @@ int mutex_init(mutex_t *lock)
 int mutex_acquire(mutex_t *lock)
 {
     volatile int outval;
+    volatile int *lockvar = &(lock->lock);
     asm(
         "mutexloop:"
         "mov    $1, %%eax;"
@@ -92,12 +112,13 @@ int mutex_acquire(mutex_t *lock)
         "test %%al,%%al;"
         "je endlabel"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
     syscall(SYS_futex, lock, FUTEX_WAIT, 1, NULL, NULL, 0);
     asm(
         "jmp mutexloop");
     asm(
         "endlabel:");
+    lock->locker = gettid();
     return 0;
 }
 
@@ -110,10 +131,21 @@ int mutex_acquire(mutex_t *lock)
 int mutex_release(mutex_t *lock)
 {
     volatile int outval;
+    if (lock->locker != gettid())
+    {
+        return ENOTRECOVERABLE;
+    }
+    volatile int *lockvar = &(lock->lock);
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
-        : "r"(lock));
+        : "r"(lockvar));
+    lock->locker = 0;
     syscall(SYS_futex, lock, FUTEX_WAKE, 1, NULL, NULL, 0);
     return 0;
+}
+
+int mutex_trylock(mutex_t *lock)
+{
+    return lock->locker == 0 ? 0 : EBUSY;
 }

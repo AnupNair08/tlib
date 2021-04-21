@@ -237,6 +237,8 @@ void testSig()
     thread_create(&t3, NULL, sigroutine, NULL);
     thread_join(t3, NULL);
     ret = thread_kill(t3, SIGINT);
+    if (ret == -1)
+        failure += 1;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -325,7 +327,6 @@ void testLock()
  */
 int main(int argc, char *argv[])
 {
-    setbuf(stdout, NULL);
     signal(SIGINT, globalhandle);
     printf("\nRunning Unit Tests\n");
     LINE;

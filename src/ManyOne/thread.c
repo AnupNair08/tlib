@@ -13,6 +13,7 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <limits.h>
 #include "tattr.h"
 #include "utils.h"
@@ -25,24 +26,6 @@ tcbQueue __allThreads;
 sigset_t __signalList;
 unsigned long int __nextpid;
 
-// typedef unsigned long address_t;
-// #define JB_BP 5
-// #define JB_SP 6
-// #define JB_PC 7
-
-// /* A translation is required when using an address of a variable.
-//    Use this as a black box in your code. 
-//    This code was referenced from : https://sites.cs.ucsb.edu/~chris/teaching/cs170/projects/proj2.html*/
-// address_t translate_address(address_t addr)
-// {
-//     address_t ret;
-//     asm volatile("xor    %%fs:0x30,%0\n"
-//                  "rol    $0x11,%0\n"
-//                  : "=g"(ret)
-//                  : "0"(addr));
-//     return ret;
-// }
-
 /**
  * @brief Function to allocate a stack to Many One threads
  * 
@@ -54,8 +37,15 @@ static void *allocStack(size_t size, size_t guard)
 {
     void *stack = NULL;
     //Align the memory to a 64 bit compatible page size and associate a guard area for the stack
-    if (posix_memalign(&stack, GUARD_SZ, size + guard) || mprotect(stack, guard, PROT_NONE))
+    stack = mmap(NULL, size + guard, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+    if (stack == MAP_FAILED)
     {
+        perror("Stack Allocation");
+        return NULL;
+    }
+    if (mprotect(stack, guard, PROT_NONE))
+    {
+        munmap(stack, size + guard);
         perror("Stack Allocation");
         return NULL;
     }
@@ -247,7 +237,7 @@ static void initManyOne()
     ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
     // Schedulers context (has a new stack and PC)
     void *schedStack = allocStack(STACK_SZ, 0) + STACK_SZ;
-    createContext(ctx, scheduler,schedStack);
+    createContext(ctx, scheduler, schedStack);
     //
 
     // makecontext(thread_context, scheduler, 0);
@@ -264,16 +254,13 @@ static void initManyOne()
 void wrapRoutine()
 {
     WRAP_SIGNALS;
-    // raiseSignals();
     funcargs *temp = __curproc->args;
     enabletimer();
     (temp->f)(temp->arg);
     disabletimer();
     __curproc->exited = 1;
     free(temp);
-    enabletimer();
     switchToScheduler();
-    // while(1){}
 }
 
 /**
@@ -288,6 +275,11 @@ void wrapRoutine()
  */
 int thread_create(thread *t, void *attr, void *routine, void *arg)
 {
+    // Handle errors
+    if (t == NULL || routine == NULL)
+    {
+        return EINVAL;
+    }
     // Disable any switches during creation
     disabletimer();
     // Initalise the state of the main thread
@@ -312,18 +304,18 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
         if (((thread_attr *)attr)->stack)
         {
             ctx[0]->__jmpbuf[JB_SP] = translate_address((address_t)((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
-            createContext(ctx, wrapRoutine,((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
+            createContext(ctx, wrapRoutine, ((thread_attr *)attr)->stack + ((thread_attr *)attr)->stackSize);
         }
         else if (((thread_attr *)attr)->stackSize)
         {
             temp->stack = allocStack(((thread_attr *)attr)->stackSize, 0);
-            createContext(ctx,wrapRoutine,temp->stack + ((thread_attr *)attr)->stackSize);
+            createContext(ctx, wrapRoutine, temp->stack + ((thread_attr *)attr)->stackSize);
         }
     }
     else
     {
         temp->stack = allocStack(STACK_SZ, 0) + STACK_SZ;
-        createContext(ctx, wrapRoutine,temp->stack);
+        createContext(ctx, wrapRoutine, temp->stack);
     }
 
     initTcb(temp, RUNNABLE, __nextpid++, ctx);
@@ -358,9 +350,9 @@ int thread_join(thread t, void **retLocation)
     if (waitedThread->exited)
     {
         if (retLocation)
-            *retLocation = (void *)0;
+            *retLocation = (void *)EINVAL;
         enabletimer();
-        return 0;
+        return EINVAL;
     }
     //Add thread to the list of waiters
     waitedThread->waiters = (int *)realloc(waitedThread->waiters, (++(waitedThread->numWaiters)) * sizeof(int));
@@ -383,6 +375,10 @@ int thread_join(thread t, void **retLocation)
  */
 int thread_kill(pid_t t, int signum)
 {
+    if (signum <= 0)
+    {
+        return -1;
+    }
     int ret = 0;
     disabletimer();
     if (signum == SIGINT || signum == SIGCONT || signum == SIGSTOP)
@@ -417,5 +413,4 @@ int thread_exit(void *retVal)
     disabletimer();
     __curproc->exited = 1;
     switchToScheduler();
-    // enabletimer();
 }
