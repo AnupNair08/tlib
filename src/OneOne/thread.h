@@ -8,6 +8,7 @@
  * @copyright Copyright (c) 2021
  * 
  */
+
 #define _GNU_SOURCE
 #include <unistd.h>
 /**
@@ -15,9 +16,23 @@
  */
 typedef unsigned long int thread;
 /**
- * @brief Lock Object
+ * @brief Mutex Lock Object
  */
-typedef volatile int spin_t;
+typedef struct
+{
+    volatile int __lock;
+    unsigned int __locker;
+} mutex_t;
+
+/**
+ * @brief Spin Lock Object
+ */
+typedef struct
+{
+    volatile int __lock;
+    unsigned int __locker;
+} spin_t;
+
 /**
  * @brief Attribute Object for threads 
  */
@@ -40,7 +55,6 @@ int spin_acquire(spin_t *);
 int spin_release(spin_t *);
 int spin_trylock(spin_t *);
 
-typedef volatile int mutex_t;
 // Mutex related APIs
 int mutex_init(mutex_t *);
 int mutex_acquire(mutex_t *);

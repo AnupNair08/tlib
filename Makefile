@@ -49,14 +49,17 @@ alltest: $(TESTSMANYONE) $(TESTSONEONE) $(SRCMANYONE) $(SRCONEONE)
 	$(CC) robust.o $(OBJONEONE) -o robust 
 	$(CC) readers.o $(OBJONEONE) -o readers 
 	@mv *.o unitTests robust lockTests benchmark readers $(BINONEONE)
-	
+
+# Run valgrind on the unit test to check for memory leaks	
 check-leak:
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes  --verbose \
 	--log-file=leak-summary.txt  ./${BINONEONE}/unitTests
 
+# Clean the compiled object files
 clean:
 	@rm $(BINMANYONE)*.o
 	@rm $(BINONEONE)*.o
 
+# Generate detailed documentation
 docs:
 	doxygen doxyconfig

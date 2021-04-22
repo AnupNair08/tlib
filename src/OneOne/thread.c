@@ -1,3 +1,13 @@
+/**
+ * @file thread.c
+ * @author Anup Nair & Hrishikesh Athalye
+ * @brief Implementation of one-one thread APIs
+ * @version 0.1
+ * @date 2021-04-22
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #define _GNU_SOURCE
 #define DEV
 #include <stdio.h>
@@ -21,10 +31,14 @@
 #include "utils.h"
 #include "locks.h"
 #include "sighandler.h"
-spin_t globalLock;
-singlyLL __tidList;
-thread currTid;
 
+spin_t __globalLock;
+singlyLL __tidList;
+
+/**
+ * @brief Cleanup handler for freeing resources of all threads at exit
+ * 
+ */
 void cleanup()
 {
     deleteAllThreads(&__tidList);
@@ -32,19 +46,14 @@ void cleanup()
 }
 
 /**
- * @brief Library initialzer
+ * @brief Library initialzer for setting up data structures and handlers
  * 
  */
 static void init()
 {
-    printf("Library initialised\n");
-    spin_init(&globalLock);
-    sigset_t signalMask;
-    sigfillset(&signalMask);
-    sigdelset(&signalMask, SIGINT);
-    sigdelset(&signalMask, SIGSTOP);
-    sigdelset(&signalMask, SIGCONT);
-    sigprocmask(SIG_BLOCK, &signalMask, NULL);
+    // printf("Library initialised\n");
+    spin_init(&__globalLock);
+    INIT_SIGNALS
     singlyLLInit(&__tidList);
     node *insertedNode = singlyLLInsert(&__tidList, getpid());
     insertedNode->tidCpy = insertedNode->tid;
@@ -113,11 +122,11 @@ static int wrap(void *fa)
  */
 int thread_create(thread *t, void *attr, void *routine, void *arg)
 {
-    spin_acquire(&globalLock);
+    spin_acquire(&__globalLock);
     static int initState = 0;
     if (t == NULL || routine == NULL)
     {
-        spin_release(&globalLock);
+        spin_release(&__globalLock);
         return EINVAL;
     }
     thread tid;
@@ -131,7 +140,7 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
     if (insertedNode == NULL)
     {
         printf("Thread address not found\n");
-        spin_release(&globalLock);
+        spin_release(&__globalLock);
         return -1;
     }
     funcargs *fa;
@@ -139,7 +148,7 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
     if (!fa)
     {
         printf("Malloc failed\n");
-        spin_release(&globalLock);
+        spin_release(&__globalLock);
         return -1;
     }
     fa->f = routine;
@@ -151,7 +160,7 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
         if (!thread_stack)
         {
             perror("tlib create");
-            spin_release(&globalLock);
+            spin_release(&__globalLock);
             return errno;
         }
         fa->stack = attr_t->stack == NULL ? thread_stack : attr_t->stack;
@@ -171,7 +180,7 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
         if (!thread_stack)
         {
             perror("tlib create");
-            spin_release(&globalLock);
+            spin_release(&__globalLock);
             return errno;
         }
         fa->stack = thread_stack;
@@ -189,11 +198,11 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
     {
         perror("tlib create");
         free(thread_stack);
-        spin_release(&globalLock);
+        spin_release(&__globalLock);
         return errno;
     }
     *t = tid;
-    spin_release(&globalLock);
+    spin_release(&__globalLock);
     return 0;
 }
 
@@ -247,31 +256,31 @@ int thread_kill(pid_t tid, int signum)
  */
 int thread_join(thread t, void **retLocation)
 {
-    spin_acquire(&globalLock);
+    spin_acquire(&__globalLock);
     void *addr = returnCustomTidAddress(&__tidList, t);
     if (addr == NULL)
     {
-        spin_release(&globalLock);
+        spin_release(&__globalLock);
         return ESRCH;
     }
     if (*((pid_t *)addr) == 0)
     {
-        spin_release(&globalLock);
+        spin_release(&__globalLock);
         return EINVAL;
     }
     int ret;
     while (*((pid_t *)addr) == t)
     {
-        spin_release(&globalLock);
+        spin_release(&__globalLock);
         ret = syscall(SYS_futex, addr, FUTEX_WAIT, t, NULL, NULL, 0);
-        spin_acquire(&globalLock);
+        spin_acquire(&__globalLock);
     }
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
     if (retLocation)
     {
         *retLocation = getReturnValue(&__tidList, t);
     }
-    spin_release(&globalLock);
+    spin_release(&__globalLock);
     return ret;
 }
 
@@ -280,14 +289,16 @@ int thread_join(thread t, void **retLocation)
  * 
  * @param ret return value of the thread to be available to thread_join()
  * @return void
+ * 
+ * @note Implicit call to thread_exit is made by each thread after completing the execution of routine
  */
 void thread_exit(void *ret)
 {
-    spin_acquire(&globalLock);
+    spin_acquire(&__globalLock);
     void *addr = returnCustomTidAddress(&__tidList, gettid());
     if (addr == NULL)
     {
-        spin_release(&globalLock);
+        spin_release(&__globalLock);
         return;
     }
     if (ret)
@@ -296,6 +307,6 @@ void thread_exit(void *ret)
     }
     node *insertedNode = returnCustomNode(&__tidList, gettid());
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-    spin_release(&globalLock);
+    spin_release(&__globalLock);
     return;
 }

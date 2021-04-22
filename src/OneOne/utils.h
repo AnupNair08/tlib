@@ -8,6 +8,7 @@
  * @copyright Copyright (c) 2021
  * 
  */
+
 /**
  * @brief Arguments passed to the wrapper function
  * 
@@ -42,6 +43,14 @@ typedef struct singlyLL
     node *tail;
 } singlyLL;
 
+#define INIT_SIGNALS                 \
+    sigset_t signalMask;             \
+    sigfillset(&signalMask);         \
+    sigdelset(&signalMask, SIGINT);  \
+    sigdelset(&signalMask, SIGSTOP); \
+    sigdelset(&signalMask, SIGCONT); \
+    sigprocmask(SIG_BLOCK, &signalMask, NULL);
+
 // Linked List related operations
 
 int singlyLLInit(singlyLL *);
@@ -53,8 +62,6 @@ int singlyLLDelete(singlyLL *, unsigned long int);
 unsigned long int *returnTailTidAddress(singlyLL *);
 
 unsigned long int *returnCustomTidAddress(singlyLL *, unsigned long int);
-
-void persistTid(singlyLL *, unsigned long int);
 
 int killAllThreads(singlyLL *, int signum);
 

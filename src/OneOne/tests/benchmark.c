@@ -1,3 +1,13 @@
+/**
+ * @file benchmark.c
+ * @author Hrishikesh Athalye
+ * @brief Matrix Multiplication program to test single and multi threaded performance
+ * @version 0.1
+ * @date 2021-04-22
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include <stdio.h>
 #include <unistd.h>
 #ifdef BUILD
@@ -169,7 +179,8 @@ int main(int argc, char *argv[])
         {
             thread_join(threads[i], NULL);
         }
-        for(int i = 0; i < r1; i++){
+        for (int i = 0; i < r1; i++)
+        {
             free(res[i]);
         }
         free(res);

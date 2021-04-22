@@ -1,7 +1,7 @@
 /**
  * @file locks.h
  * @author Hrishikesh Athalye & Anup Nair
- * @brief 
+ * @brief API interface for synchronization primitives
  * @version 0.1
  * @date 2021-04-15
  * 
@@ -19,16 +19,17 @@
 
 typedef struct
 {
-    volatile int lock;
-    unsigned int locker;
+    volatile int __lock;
+    unsigned int __locker;
 } spin_t;
+
 /**
  * @brief Mutex object
  */
 typedef struct
 {
-    volatile int lock;
-    unsigned int locker;
+    volatile int __lock;
+    unsigned int __locker;
 } mutex_t;
 
 // Spin lock APIs
@@ -37,6 +38,7 @@ int spin_init(spin_t *);
 int spin_acquire(spin_t *);
 
 int spin_release(spin_t *);
+
 int spin_trylock(spin_t *);
 
 // Mutex lock APIs
@@ -45,4 +47,5 @@ int mutex_init(mutex_t *);
 int mutex_acquire(mutex_t *);
 
 int mutex_release(mutex_t *);
+
 int mutex_trylock(mutex_t *);

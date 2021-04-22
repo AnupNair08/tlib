@@ -1,3 +1,14 @@
+/**
+ * @file locks.c
+ * @author Hrishikesh Athalye & Anup Nair
+ * @brief Implementation of synchronization primitives
+ * @version 0.1
+ * @date 2021-04-15
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
+
 #include <sys/syscall.h>
 #include <linux/futex.h>
 #include <unistd.h>
@@ -19,12 +30,12 @@
 int spin_init(spin_t *lock)
 {
     volatile int outval;
-    volatile int *lockvar = &(lock->lock);
+    volatile int *lockvar = &(lock->__lock);
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
         : "r"(lockvar));
-    lock->locker = 0;
+    lock->__locker = 0;
     return 0;
 }
 
@@ -38,7 +49,7 @@ int spin_acquire(spin_t *lock)
 {
     // Atomically busy wait until the lock becomes available
     int outval;
-    volatile int *lockvar = &(lock->lock);
+    volatile int *lockvar = &(lock->__lock);
     asm(
         "whileloop:"
         "xchg   %%al, (%1);"
@@ -63,18 +74,24 @@ int spin_release(spin_t *lock)
     // {
     //     return ENOTRECOVERABLE;
     // }
-    volatile int *lockvar = &(lock->lock);
+    volatile int *lockvar = &(lock->__lock);
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
         : "r"(lockvar));
-    lock->locker = 0;
+    lock->__locker = 0;
     return 0;
 }
 
+/**
+ * @brief Check if a lock has been acquired already
+ * 
+ * @param lock Spinlock object
+ * @return int 
+ */
 int spin_trylock(spin_t *lock)
 {
-    return lock->locker == 0 ? 0 : EBUSY;
+    return lock->__locker == 0 ? 0 : EBUSY;
 }
 
 /**
@@ -85,13 +102,13 @@ int spin_trylock(spin_t *lock)
  */
 int mutex_init(mutex_t *lock)
 {
-    volatile int *lockvar = &(lock->lock);
+    volatile int *lockvar = &(lock->__lock);
     int outval;
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
         : "r"(lockvar));
-    lock->locker = 0;
+    lock->__locker = 0;
     return 0;
 }
 
@@ -104,7 +121,7 @@ int mutex_init(mutex_t *lock)
 int mutex_acquire(mutex_t *lock)
 {
     volatile int outval;
-    volatile int *lockvar = &(lock->lock);
+    volatile int *lockvar = &(lock->__lock);
     asm(
         "mutexloop:"
         "mov    $1, %%eax;"
@@ -135,17 +152,23 @@ int mutex_release(mutex_t *lock)
     // {
     //     return ENOTRECOVERABLE;
     // }
-    volatile int *lockvar = &(lock->lock);
+    volatile int *lockvar = &(lock->__lock);
     asm(
         "movl $0x0,(%1);"
         : "=r"(outval)
         : "r"(lockvar));
-    lock->locker = 0;
+    lock->__locker = 0;
     syscall(SYS_futex, lock, FUTEX_WAKE, 1, NULL, NULL, 0);
     return 0;
 }
 
+/**
+ * @brief Check if a lock has been acquired already
+ * 
+ * @param lock Mutex object
+ * @return int 
+ */
 int mutex_trylock(mutex_t *lock)
 {
-    return lock->locker == 0 ? 0 : EBUSY;
+    return lock->__locker == 0 ? 0 : EBUSY;
 }

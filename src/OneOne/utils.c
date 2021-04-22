@@ -1,3 +1,14 @@
+/**
+ * @file utils.c
+ * @author Hrishikesh Athalaye & Anup Nair
+ * @brief Data structures needed for implementing the threads APIs
+ * @version 0.1
+ * @date 2021-04-22
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,8 +22,6 @@
 #include "tlib.h"
 
 #define TGKILL 234
-
-//One-One data structure interface
 
 /**
  * @brief Initialize the Singly Linked List
@@ -253,6 +262,11 @@ void *getReturnValue(singlyLL *l, unsigned long int tid)
     return NULL;
 }
 
+/**
+ * @brief Umbrella function to free resources used by threads 
+ * 
+ * @param l Pointer to singlyLL list
+ */
 void deleteAllThreads(singlyLL *l)
 {
     node *tmp = l->head;
