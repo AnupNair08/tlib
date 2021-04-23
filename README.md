@@ -86,32 +86,73 @@ A mapping model refers to the way in which a thread created by the user maps to 
 - `tlib` provides two mapping models and the desired model can be chosen without changing any API calls. The implementation remains abstract to the user programs.
 - Each of the two models provides the following set of API calls:
 
-1. <b>Thread related APIs</b>
+1. <b>Thread APIs</b>
 
-   1. Thread Creation
-      1. `thread_create()`
-      2. `thread_join()`
-      3. `thread_kill()`
-      4. `thread_exit()`
-   2. Thread Attribute handling
-      1. `thread_attr_init()`
-      2. `thread_attr_destroy()`
-      3. `thread_attr_getStack()`
-      4. `thread_attr_setStack()`
-      5. `thread_attr_getGuard()`
-      6. `thread_attr_setGuard()`
 
-2. <b>Synchronization Primitves related APIs</b>
-   1. Spin Lock
-      1. `spin_init()`
-      2. `spin_acquire()`
-      3. `spin_release()`
-      4. `spin_trylock()`
-   2. Mutex Lock
-      1. `mutex_init()`
-      2. `mutex_acquire()`
-      3. `mutex_release()`
-      4. `mutex_trylock()`
+   1. <b>Thread Creation</b>
+
+   | Function | Description |
+   | --- | --- |
+   | `thread_create()` | Creates a new thread |
+   | `thread_join()` | Waits for a callee thread to be terminated |
+   | `thread_kill()` | Send a signal to a specific thread |
+   | `thread_exit()` | Exit the thread routine |
+
+   2. <b>Thread Attribute handling</b>
+   
+   | Function | Description |
+   | --- | --- |
+   | `thread_attr_init()` | Initialize an attribute object |
+   | `thread_attr_destroy()` | Destroy an attribute object |
+   | `thread_attr_setStack()` | Set a user defined stack size |
+   | `thread_attr_getStack()` | Get the size of the current thread stack |
+   | `thread_attr_setGuard()` | Set a user defined guard page size |
+   | `thread_attr_getGuard()` | Get the size of the current thread stack guard page |
+
+2. <b>Synchronization Primitves APIs</b>
+
+   1. <b>Spin Lock</b>
+
+   | Function | Description |
+   | --- | --- |
+   | `spin_init()` | Initialize a spinlock object |
+   | `spin_acquire()` | Acquire a spinlock |
+   | `spin_release()` | Release a spinlock |
+   | `spin_trylock()` | Check if a spinlock can be acquired |
+
+   2. <b>Mutex Lock</b>
+
+   | Function | Description |
+   | --- | --- |
+   | `mutex_init()` | Initialize a mutex object |
+   | `mutex_acquire()` | Acquire a mutex |
+   | `mutex_release()` | Release a mutex |
+   | `mutex_trylock()` | Check if a mutex can be acquired |
+
+## Usage
+
+To use tlib in your programs, do the following
+
+
+## Running Tests
+
+The library comes with an extensive test suite for checking the implementation and testing the performance of the library. Each implementation has a set of unit tests that check the correctness of the APIs. There is a test for checking the synchronization primitves and a classic program of readers writers to check the working of synchronization primitives namely mutex and spinlock. The test suite also includes a robust testing program that checks for the error handling and incorrect input cases. Finally there is a benchmark program which is a matrix multiplication program in the single and multi-threaded environments to compare the performance of using a threading library.
+
+To run the tests
+```
+Run the following in the root directory of the project
+
+# Compile all binaries
+make alltest
+# Start the test suite
+./run.sh
+
+# Check for memory leaks
+make check-leak
+
+```
+
+The shell script will test all the functionalities mentioned in the test suite above. In addition, the memory leak checker uses valgrind to look at potential memory leaks in the test code. 
 
 ## References
 
