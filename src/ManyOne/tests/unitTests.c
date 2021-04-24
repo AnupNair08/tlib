@@ -205,6 +205,7 @@ void testSig()
     printf("Sending a signal to a running thread\n");
     thread_create(&t1, NULL, sigroutine, NULL);
     sleep(1);
+    // raise(SIGTERM);
     int ret = thread_kill(t1, SIGTERM);
     thread_join(t1, NULL);
     if (ret != -1)
@@ -323,15 +324,13 @@ void testLock()
  */
 int main(int argc, char *argv[])
 {
-    // signal(SIGINT, globalhandle);
+    signal(SIGINT, globalhandle);
     printf("\nRunning Unit Tests\n");
     LINE;
     testCreate();
     LINE;
     testJoin();
     LINE;
-    //testAttr();
-    //LINE;
     testLock();
     LINE;
     testSig();

@@ -25,6 +25,7 @@ tcb *__mainproc = NULL;
 tcbQueue __allThreads;
 sigset_t __signalList;
 unsigned long int __nextpid;
+schedParams __def = {sc : 0, ms : 100};
 
 /**
  * @brief Function to allocate a stack to Many One threads
@@ -72,13 +73,13 @@ static void setSignals()
  * 
  * @return void
  */
-static void starttimer()
+static void starttimer(schedParams *interval)
 {
     struct itimerval it_val;
-    it_val.it_interval.tv_sec = 0;
-    it_val.it_interval.tv_usec = 100;
-    it_val.it_value.tv_sec = 0;
-    it_val.it_value.tv_usec = 100;
+    it_val.it_interval.tv_sec = interval->sc;
+    it_val.it_interval.tv_usec = interval->ms;
+    it_val.it_value.tv_sec = interval->sc;
+    it_val.it_value.tv_usec = interval->ms;
     if (setitimer(ITIMER_VIRTUAL, &it_val, NULL) == -1)
     {
         perror("setitimer");
@@ -140,16 +141,16 @@ void raiseSignals()
         return;
     }
     int k = __curproc->numPendingSig;
-    sigset_t mask;
+    sigset_t *mask = (sigset_t *)malloc(sizeof(sigset_t));
     for (int i = 0; i < k; i++)
     {
-        // log_trace("Signal %d pending for %ld",__curproc->pendingSig[i],__curproc->tid);
-        sigaddset(&mask, __curproc->pendingSig[i]);
-        sigprocmask(SIG_UNBLOCK, &mask, NULL);
-        // Remove from the pending list
+        sigaddset(mask, __curproc->pendingSig[i]);
+        sigprocmask(SIG_UNBLOCK, mask, NULL);
         __curproc->numPendingSig -= 1;
-        raise(__curproc->pendingSig[i]);
+        kill(getpid(), SIGTERM);
     }
+    setSignals();
+    free(mask);
 }
 
 void switchContext(sigjmp_buf *old, sigjmp_buf *new)
@@ -169,9 +170,8 @@ void switchContext(sigjmp_buf *old, sigjmp_buf *new)
  */
 void switchToScheduler()
 {
-    switchContext(__curproc->ctx, __scheduler->ctx);
-    // log_trace("%d Returned here", __curproc->tid);
     raiseSignals();
+    switchContext(__curproc->ctx, __scheduler->ctx);
     enabletimer();
 }
 
@@ -183,10 +183,10 @@ void switchToScheduler()
 static void scheduler()
 {
     disabletimer();
+    setSignals();
     queueRunning(&__allThreads);
     int curprocexited = __curproc->exited;
     removeExitedThreads(&__allThreads);
-    setSignals();
     tcb *next = getNextThread(&__allThreads);
     if (!next)
         return;
@@ -211,7 +211,7 @@ static void scheduler()
  * @brief Library initialzer
  * 
  */
-static void initManyOne()
+static void initManyOne(schedParams interval)
 {
     printf("Library initialized\n");
 
@@ -243,7 +243,7 @@ static void initManyOne()
     // makecontext(thread_context, scheduler, 0);
     initTcb(__scheduler, RUNNING, 0, ctx);
 
-    starttimer();
+    starttimer(&interval);
 }
 
 /**
@@ -286,7 +286,19 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
     static int isInit = 0;
     if (!isInit)
     {
-        initManyOne();
+        if (attr)
+        {
+            int ms = ((thread_attr *)attr)->schedInterval.ms;
+            int sc = ((thread_attr *)attr)->schedInterval.sc;
+            if (ms != 0 || sc != 0)
+            {
+                initManyOne(((thread_attr *)attr)->schedInterval);
+            }
+        }
+        else
+        {
+            initManyOne(__def);
+        }
         isInit = 1;
     }
     sigjmp_buf *ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
@@ -323,7 +335,6 @@ int thread_create(thread *t, void *attr, void *routine, void *arg)
     addThread(&__allThreads, temp);
     *t = temp->tid;
     sigsetjmp(*__mainproc->ctx, 1);
-
     enabletimer();
     return 0;
 }
