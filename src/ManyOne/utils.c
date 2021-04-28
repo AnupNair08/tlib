@@ -284,19 +284,14 @@ void unlockMutex(tcbQueue *t, mutex_t *lock)
     int numRequeue = 0;
     while (tmp)
     {
-        // log_trace("%x", lock);
-        //occasionally segfaults here
-        // log_trace("tmp : %x %d", tmp, tmp);
-        // log_trace("tcbnode : %lx %ld", tmp->tcbnode, tmp->tcbnode);
-        // if(tmp==NULL || tmp->tcbnode == NULL){
-        //     log_trace("abcd");
-        // }
         if (tmp->tcbnode->mutexWait == lock)
         {
             tmp->tcbnode->mutexWait = NULL;
             tmp->tcbnode->thread_state = RUNNABLE;
             requeue = (tcb **)realloc(requeue, ++numRequeue);
             requeue[numRequeue - 1] = tmp->tcbnode;
+            //Once the first thread that was waiting is found, break
+            break;
         }
         tmp = tmp->next;
     }
