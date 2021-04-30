@@ -33,6 +33,7 @@ tlib: $(SRCONEONE) $(SRCMANYONE)
 # Compile all binaries for the test suite
 # All binaries and executable files get stored in bin/ directory
 alltest: $(TESTSMANYONE) $(TESTSONEONE) $(SRCMANYONE) $(SRCONEONE)
+	@make init
 	$(CC) $(CFLAGS) -c $(TESTSMANYONE) $(SRCMANYONE) 
 	$(CC) manyTests.o $(OBJMANYONE) -o manyTests
 	$(CC) unitTests.o $(OBJMANYONE) -o unitTests
@@ -49,6 +50,10 @@ alltest: $(TESTSMANYONE) $(TESTSONEONE) $(SRCMANYONE) $(SRCONEONE)
 	$(CC) robust.o $(OBJONEONE) -o robust 
 	$(CC) readers.o $(OBJONEONE) -o readers 
 	@mv *.o unitTests robust lockTests benchmark readers $(BINONEONE)
+
+run:
+	make alltest
+	./run.sh
 
 # Run valgrind on the unit test to check for memory leaks	
 check-leak:

@@ -130,7 +130,43 @@ A mapping model refers to the way in which a thread created by the user maps to 
 
 ## Usage
 
-To use tlib in your programs, do the following
+To use tlib in your programs, do the following:
+
+```c
+// Use on of the macros to use the desired mapping
+#define ONE_ONE
+// #define MANY_ONE
+#include <stdio.h>
+
+#ifdef ONE_ONE
+   #include "src/OneOne/thread.h"
+#else
+   #include "src/ManyOne/thread.h"
+#endif
+
+int global_var = 0;
+void func1(){
+   printf("In thread routine 1");
+   global_var++;
+   return;
+}
+
+void func2(){
+   printf("In thread routine 2");
+   global_var++;
+   return;
+}
+
+int main(){
+   thread t1,t2;
+   thread_create(&t1, NULL, func1, NULL);
+   thread_create(&t2, NULL, func2, NULL);
+   thread_join(t1,NULL);
+   thread_join(t2,NULL);
+   return 0;
+}
+
+```
 
 ## Running Tests
 
@@ -141,10 +177,14 @@ To run the tests
 ```
 Run the following in the root directory of the project
 
+# Compile and auto run
+make run
+
 # Compile all binaries
 make alltest
 # Start the test suite
 ./run.sh
+
 
 # Check for memory leaks
 make check-leak
@@ -156,3 +196,9 @@ The shell script will test all the functionalities mentioned in the test suite a
 ## References
 
 - [Pthread Programming Ch.6](https://maxim.int.ru/bookshelf/PthreadsProgram/htm/r_47.html)
+- [Introduction to pthreads](https://www.cs.cmu.edu/afs/cs/academic/class/15492-f07/www/pthreads.html)
+- [Fundamentals of Multithreading](http://malgenomeproject.org/os2018fall/04_thread_b.pdf)
+- [POSIX Linux Thread Library](https://www.cs.utexas.edu/~witchel/372/lectures/POSIX_Linux_Threading.pdf)
+- [Implementing Threads](http://www.it.uu.se/education/course/homepage/os/vt18/module-4/implementing-threads/#kernel-level-threads)
+- [POSIX Threads API](https://hpc-tutorials.llnl.gov/posix/)
+- [Coroutines](http://www.csl.mtu.edu/cs4411.ck/common/Coroutines.pdf)
