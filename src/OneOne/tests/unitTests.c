@@ -29,6 +29,7 @@
 int TotalTests = 0;
 int success = 0;
 int failure = 0;
+spin_t printlock;
 
 void globalhandle()
 {
@@ -148,31 +149,40 @@ void testJoin()
  * 
  */
 
-void exitroutine1(void *lock)
+void exitroutine1(void *retVal)
 {
-    printf("Exiting thread 1\n");
-    thread_exit(NULL);
+    *(int *)retVal = gettid();
+    safeprintf(&printlock,"Exiting thread 1 with return value %d\n", *(int*)retVal);
+    thread_exit(retVal);
 }
 
-void exitroutine2(void *lock)
+void exitroutine2(void *retVal)
 {
-    printf("Exiting thread 2\n");
-    thread_exit(NULL);
+    *(int *)retVal = gettid();
+    safeprintf(&printlock,"Exiting thread 2 with return value %d\n", *(int*)retVal);
+    thread_exit(retVal);
 }
 void testExit()
 {
+    int* retVal1 = (int*)malloc(sizeof(int));
+    int* retVal2 = (int*)malloc(sizeof(int));
+    int arg1, arg2;
     TotalTests += 1;
     printf(BLUE "Testing thread_exit()\n\n" RESET);
     thread t1, t2;
+    int* retVal = (int*)malloc(sizeof(int));
     spin_t lock;
     spin_init(&lock);
-    thread_create(&t1, NULL, exitroutine1, (void *)&lock);
-    thread_create(&t2, NULL, exitroutine2, (void *)&lock);
-    thread_join(t1, NULL);
-    thread_join(t2, NULL);
-    printf("Joining Complete\n");
+    thread_create(&t1, NULL, exitroutine1, (void *)&arg1);
+    thread_create(&t2, NULL, exitroutine2, (void *)&arg2);
+    thread_join(t1, (void**)&retVal1);
+    thread_join(t2, (void**)&retVal2);
+    printf("Joined thread 1 with return value %d\n", *(retVal1));
+    printf("Joined thread 2 with return value %d\n", *(retVal2));
     printf(GREEN "Test Passed\n" RESET);
     success += 1;
+    // free(retVal1);
+    // free(retVal2);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------

@@ -54,6 +54,7 @@ node *singlyLLInsert(singlyLL *ll, unsigned long int tid)
     }
     tmp->tid = tid;
     tmp->next = NULL;
+    tmp->retVal = NULL;
     if (ll->head == NULL)
     {
         ll->head = ll->tail = tmp;

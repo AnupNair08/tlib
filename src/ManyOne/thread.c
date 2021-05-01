@@ -258,7 +258,7 @@ void wrapRoutine()
     enabletimer();
     (temp->f)(temp->arg);
     disabletimer();
-    __curproc->exited = 1;
+    // __curproc->exited = 1;
     free(temp);
     switchToScheduler();
 }
@@ -371,9 +371,11 @@ int thread_join(thread t, void **retLocation)
     __curproc->thread_state = WAITING;
 
     switchToScheduler();
-    if (retLocation)
-        *retLocation = (void *)0;
-
+    if (retLocation){
+        tcb *temp = getThread(&__allThreads,t);
+        printf("%x",temp);
+        *retLocation = temp->retVal ;
+    }
     return 0;
 }
 
@@ -422,6 +424,7 @@ int thread_kill(pid_t t, int signum)
 int thread_exit(void *retVal)
 {
     disabletimer();
-    __curproc->exited = 1;
+    // __curproc->exited = 1;
+    __curproc->retVal = retVal;
     switchToScheduler();
 }

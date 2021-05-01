@@ -29,6 +29,7 @@
 int TotalTests = 0;
 int success = 0;
 int failure = 0;
+int retVal1, retVal2;
 
 void globalhandle()
 {
@@ -150,26 +151,33 @@ void testJoin()
 
 void exitroutine1(void *lock)
 {
-    printf("Exiting thread 1\n");
-    thread_exit(NULL);
+    retVal1 = 1;
+    printf("Exiting thread 1 with return value 1\n");
+    thread_exit(&retVal1);
 }
 
 void exitroutine2(void *lock)
 {
-    printf("Exiting thread 2\n");
-    thread_exit(NULL);
+    retVal2 = 2;
+    printf("Exiting thread 2 with return value 2\n");
+    thread_exit(&retVal2);
 }
 void testExit()
 {
     TotalTests += 1;
     printf(BLUE "Testing thread_exit()\n\n" RESET);
     thread t1, t2;
+    int ret1, ret2;
+    int* ret1ptr = &ret1;
+    int* ret2ptr = &ret2;
     spin_t lock;
     spin_init(&lock);
     thread_create(&t1, NULL, exitroutine1, (void *)&lock);
     thread_create(&t2, NULL, exitroutine2, (void *)&lock);
-    thread_join(t1, NULL);
-    thread_join(t2, NULL);
+    thread_join(t1, (void**)&ret1);
+    thread_join(t2, (void**)&ret2);
+    printf("Joined thread 1 with return value %d", ret1);
+    printf("Joined thread 2 with return value %d", ret2);
     printf("Joining Complete\n");
     printf(GREEN "Test Passed\n" RESET);
     success += 1;
@@ -324,17 +332,17 @@ void testLock()
  */
 int main(int argc, char *argv[])
 {
-    signal(SIGINT, globalhandle);
-    printf("\nRunning Unit Tests\n");
-    LINE;
-    testCreate();
-    LINE;
-    testJoin();
-    LINE;
-    testLock();
-    LINE;
-    testSig();
-    LINE;
+    // signal(SIGINT, globalhandle);
+    // printf("\nRunning Unit Tests\n");
+    // LINE;
+    // testCreate();
+    // LINE;
+    // testJoin();
+    // LINE;
+    // testLock();
+    // LINE;
+    // testSig();
+    // LINE;
     testExit();
     LINE;
 

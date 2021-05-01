@@ -315,4 +315,5 @@ void initTcb(tcb *t, int initState, thread tid, sigjmp_buf *context)
     t->mutexWait = NULL;
     t->ctx = context;
     t->stack = NULL;
+    t->retVal = NULL;
 }
