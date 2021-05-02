@@ -23,7 +23,7 @@ echo -e "\nRunning single threaded matrix multiplication"
 tests=(10 100 200 500 800 1000)
 for i in "${tests[@]}"
 do
-   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${OneOneTest}/benchmark single > /dev/null; } |& grep user  
+   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${OneOneTest}/benchmark single > /dev/null; } |& grep real  
 done
 # echo "======================================"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
@@ -33,7 +33,7 @@ echo -e "\nRunning multi threaded matrix multiplication"
 tests=(10 100 200 500 800 1000)
 for i in "${tests[@]}"
 do
-   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${OneOneTest}/benchmark multi > /dev/null; } |& grep user  
+   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${OneOneTest}/benchmark multi > /dev/null; } |& grep real  
 done
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 
@@ -56,7 +56,7 @@ for i in "${tests[@]}"
 do
    sec=` expr $i / 1000000 `
    ms=` expr $i % 1000000 `
-   echo -n "Scheduling Interval $sec s $ms μs => " && { time python3 src/OneOne/tests/script.py 500 | ${ManyOneTest}/matrix multi $i > /dev/null; } |& grep user  
+   echo -n "Scheduling Interval $sec s $ms μs => " && { time python3 src/OneOne/tests/script.py 500 | ${ManyOneTest}/matrix multi $i > /dev/null; } |& grep real  
 done
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 
@@ -69,7 +69,7 @@ echo -e "\nRunning single threaded matrix multiplication"
 tests=(10 100 200 500 800 1000)
 for i in "${tests[@]}"
 do
-   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${ManyOneTest}/matrix single > /dev/null; } |& grep user  
+   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${ManyOneTest}/matrix single > /dev/null; } |& grep real  
 done
 # echo "======================================"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
@@ -79,7 +79,7 @@ echo -e "\nRunning multi threaded matrix multiplication"
 tests=(10 100 200 500 800 1000)
 for i in "${tests[@]}"
 do
-   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${ManyOneTest}/matrix multi > /dev/null; } |& grep user  
+   echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${ManyOneTest}/matrix multi > /dev/null; } |& grep real  
 done
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 
