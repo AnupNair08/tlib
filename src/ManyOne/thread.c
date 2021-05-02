@@ -1,3 +1,13 @@
+/**
+ * @file thread.c
+ * @author Hrishikesh Athalye & Anup Nair
+ * @brief Implementation of thread APIs in many many mapping
+ * @version 0.1
+ * @date 2021-05-02
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #define _GNU_SOURCE
 #define DEV
 #include <stdio.h>
@@ -191,7 +201,6 @@ static void scheduler()
     if (!next)
         return;
 
-    // Set new thread as running and current thread as runnable
     if (curprocexited == 0)
     {
         tcb *__prev = __curproc;
@@ -225,7 +234,6 @@ static void initManyOne(schedParams interval)
     sigjmp_buf *ctx = (sigjmp_buf *)malloc(sizeof(sigjmp_buf));
     // Main's context (has default stack and PC)
     createContext(ctx, NULL, NULL);
-    //
     initTcb(__mainproc, RUNNING, getpid(), ctx);
 
     __curproc = __mainproc;
@@ -238,7 +246,6 @@ static void initManyOne(schedParams interval)
     // Schedulers context (has a new stack and PC)
     void *schedStack = allocStack(STACK_SZ, 0) + STACK_SZ;
     createContext(ctx, scheduler, schedStack);
-    //
 
     // makecontext(thread_context, scheduler, 0);
     initTcb(__scheduler, RUNNING, 0, ctx);
@@ -258,7 +265,7 @@ void wrapRoutine()
     enabletimer();
     (temp->f)(temp->arg);
     disabletimer();
-    // __curproc->exited = 1;
+    __curproc->exited = 1;
     free(temp);
     switchToScheduler();
 }
@@ -357,7 +364,6 @@ int thread_join(thread t, void **retLocation)
         enabletimer();
         return ESRCH;
     }
-    // check if not joinable, check if another thread is waiting (or not?)
     if (waitedThread->exited)
     {
         if (retLocation)
@@ -369,13 +375,7 @@ int thread_join(thread t, void **retLocation)
     waitedThread->waiters = (int *)realloc(waitedThread->waiters, (++(waitedThread->numWaiters)) * sizeof(int));
     waitedThread->waiters[waitedThread->numWaiters - 1] = __curproc->tid;
     __curproc->thread_state = WAITING;
-
     switchToScheduler();
-    if (retLocation){
-        tcb *temp = getThread(&__allThreads,t);
-        printf("%x",temp);
-        *retLocation = temp->retVal ;
-    }
     return 0;
 }
 
@@ -424,7 +424,6 @@ int thread_kill(pid_t t, int signum)
 int thread_exit(void *retVal)
 {
     disabletimer();
-    // __curproc->exited = 1;
-    __curproc->retVal = retVal;
+    __curproc->exited = 1;
     switchToScheduler();
 }

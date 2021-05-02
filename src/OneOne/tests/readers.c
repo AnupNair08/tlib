@@ -21,7 +21,6 @@ int readers = 0;
 int numReadersIn = 0;
 int numWritersIn = 0;
 
-
 void f1()
 {
     mutex_acquire(&lock);

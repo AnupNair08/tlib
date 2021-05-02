@@ -54,6 +54,9 @@ int thread_attr_destroy(thread_attr *);
 size_t thread_attr_getStack(thread_attr *);
 int thread_attr_setStack(thread_attr *, size_t);
 
+size_t thread_attr_getGuard(thread_attr *);
+int thread_attr_setGuard(thread_attr *, size_t);
+
 int thread_attr_setSchedInterval(thread_attr *, schedParams);
 schedParams *thread_attr_getSchedInterval(thread_attr *);
 

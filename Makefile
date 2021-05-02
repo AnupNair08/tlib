@@ -35,14 +35,13 @@ tlib: $(SRCONEONE) $(SRCMANYONE)
 alltest: $(TESTSMANYONE) $(TESTSONEONE) $(SRCMANYONE) $(SRCONEONE)
 	@make init
 	$(CC) $(CFLAGS) -c $(TESTSMANYONE) $(SRCMANYONE) 
-	$(CC) manyTests.o $(OBJMANYONE) -o manyTests
 	$(CC) unitTests.o $(OBJMANYONE) -o unitTests
 	$(CC) lockTests.o $(OBJMANYONE) -o lockTests
 	$(CC) robust.o $(OBJMANYONE) -o robust 
 	$(CC) matrix.o $(OBJMANYONE) -o matrix 
 	$(CC) readers.o $(OBJONEONE) -o readers 
 
-	@mv *.o unitTests lockTests matrix manyTests robust readers $(BINMANYONE)
+	@mv *.o unitTests lockTests matrix robust readers $(BINMANYONE)
 	$(CC) $(CFLAGS) -c $(TESTSONEONE) $(SRCONEONE) 
 	$(CC) unitTests.o $(OBJONEONE) -o unitTests
 	$(CC) lockTests.o $(OBJONEONE) -o lockTests

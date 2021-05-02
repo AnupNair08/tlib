@@ -23,11 +23,10 @@ typedef struct tcb
     int thread_state;
     sigjmp_buf *ctx;
     int exited;   //indicate if the process has exited or not
-    void* retVal;
     int *waiters; //list of all waiters on this process
     int numWaiters;
     mutex_t *mutexWait;
-    int *pendingSig; // Implement as a queue for easy deletion
+    int *pendingSig;
     int numPendingSig;
     funcargs *args;
 } tcb;

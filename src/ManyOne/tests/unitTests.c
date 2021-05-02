@@ -29,7 +29,6 @@
 int TotalTests = 0;
 int success = 0;
 int failure = 0;
-int retVal1, retVal2;
 
 void globalhandle()
 {
@@ -151,33 +150,28 @@ void testJoin()
 
 void exitroutine1(void *lock)
 {
-    retVal1 = 1;
-    printf("Exiting thread 1 with return value 1\n");
-    thread_exit(&retVal1);
+    printf("Exiting thread 1\n");
+    thread_exit(NULL);
 }
 
 void exitroutine2(void *lock)
 {
-    retVal2 = 2;
-    printf("Exiting thread 2 with return value 2\n");
-    thread_exit(&retVal2);
+    printf("Exiting thread 2\n");
+    thread_exit(NULL);
 }
 void testExit()
 {
     TotalTests += 1;
     printf(BLUE "Testing thread_exit()\n\n" RESET);
     thread t1, t2;
-    int ret1, ret2;
-    int* ret1ptr = &ret1;
-    int* ret2ptr = &ret2;
     spin_t lock;
     spin_init(&lock);
     thread_create(&t1, NULL, exitroutine1, (void *)&lock);
     thread_create(&t2, NULL, exitroutine2, (void *)&lock);
-    thread_join(t1, (void**)&ret1);
-    thread_join(t2, (void**)&ret2);
-    printf("Joined thread 1 with return value %d", ret1);
-    printf("Joined thread 2 with return value %d", ret2);
+    thread_join(t1, NULL);
+    printf("Joined thread 1\n");
+    thread_join(t2, NULL);
+    printf("Joined thread 2\n");
     printf("Joining Complete\n");
     printf(GREEN "Test Passed\n" RESET);
     success += 1;
@@ -213,7 +207,6 @@ void testSig()
     printf("Sending a signal to a running thread\n");
     thread_create(&t1, NULL, sigroutine, NULL);
     sleep(1);
-    // raise(SIGTERM);
     int ret = thread_kill(t1, SIGTERM);
     thread_join(t1, NULL);
     if (ret != -1)
@@ -260,30 +253,33 @@ void attrroutine()
 {
     puts("Thread spawned with all attributes");
 }
-// void testAttr(){
-//     TotalTests += 1;
-//     printf(BLUE"Testing thread_attr_*()\n\n"RESET);
-//     short err = 0;
-//     thread t1;
-//     thread_attr *a = (thread_attr *)malloc(sizeof(thread_attr));
-//     thread_attr_init(a);
-//     thread_attr_setStack(a,TEST_STSZ) == -1 ? log_error("Failed to set new stack size"),err=1 : log_info("Stack size changed");
-//     thread_attr_setGuard(a,TEST_GDSZ)  == -1 ? log_error("Failed to set new guard page size"),err=1 : log_info("Guard page size changed");
-//     thread_attr_getStack(a) != TEST_STSZ ? log_error("Stack size does not match"),err=1 : log_info("Set stack size to %d",TEST_STSZ);
 
-//     thread_attr_getGuard(a) != TEST_GDSZ ? log_error("Guard page size does not match"),err=1 : log_info("Set guard page size to %d",TEST_GDSZ);
-//     if(err){
-//         printf(RED"Test failed"RESET);
-//         failure += 1;
-//         return;
-//     }
-//     thread_create(&t1,a,attrroutine,NULL);
-//     thread_join(t1,NULL);
-//     thread_attr_destroy(a);
-//     printf(GREEN"Test Passed\n"RESET);
-//     success += 1;
-//     return;
-// }
+void testAttr()
+{
+    TotalTests += 1;
+    printf(BLUE "Testing thread_attr_*()\n\n" RESET);
+    short err = 0;
+    thread t1;
+    thread_attr *a = (thread_attr *)malloc(sizeof(thread_attr));
+    thread_attr_init(a);
+    thread_attr_setStack(a, TEST_STSZ) == -1 ? printf("Failed to set new stack size\n"), err = 1 : printf("Stack size changed\n");
+    thread_attr_setGuard(a, TEST_GDSZ) == -1 ? printf("Failed to set new guard page size\n"), err = 1 : printf("Guard page size changed\n");
+    thread_attr_getStack(a) != TEST_STSZ ? printf("Stack size does not match\n"), err = 1 : printf("Set stack size to %d\n", TEST_STSZ);
+
+    thread_attr_getGuard(a) != TEST_GDSZ ? printf("Guard page size does not match\n"), err = 1 : printf("Set guard page size to %d\n", TEST_GDSZ);
+    if (err)
+    {
+        printf(RED "Test failed\n" RESET);
+        failure += 1;
+        return;
+    }
+    thread_create(&t1, a, attrroutine, NULL);
+    thread_join(t1, NULL);
+    thread_attr_destroy(a);
+    printf(GREEN "Test Passed\n" RESET);
+    success += 1;
+    return;
+}
 // -----------------------------------------------------------------------------------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -332,17 +328,19 @@ void testLock()
  */
 int main(int argc, char *argv[])
 {
-    // signal(SIGINT, globalhandle);
-    // printf("\nRunning Unit Tests\n");
-    // LINE;
-    // testCreate();
-    // LINE;
-    // testJoin();
-    // LINE;
-    // testLock();
-    // LINE;
-    // testSig();
-    // LINE;
+    signal(SIGINT, globalhandle);
+    printf("\nRunning Unit Tests\n");
+    LINE;
+    testCreate();
+    LINE;
+    testJoin();
+    LINE;
+    testAttr();
+    LINE;
+    testLock();
+    LINE;
+    testSig();
+    LINE;
     testExit();
     LINE;
 

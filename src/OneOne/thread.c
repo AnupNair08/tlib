@@ -51,7 +51,6 @@ void cleanup()
  */
 static void init()
 {
-    // printf("Library initialised\n");
     spin_init(&__globalLock);
     INIT_SIGNALS
     singlyLLInit(&__tidList);

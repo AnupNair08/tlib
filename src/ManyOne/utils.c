@@ -1,3 +1,13 @@
+/**
+ * @file utils.c
+ * @author Hrishikesh Athalye & Anup Nair
+ * @brief Data Structures for implementing library interface
+ * @version 0.1
+ * @date 2021-05-02
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #define _GNU_SOURCE
 #include <signal.h>
 #include <stdio.h>
@@ -114,7 +124,6 @@ int removeThread(tcbQueue *t, unsigned long int tid)
 
 tcb *getNextThread(tcbQueue *t)
 {
-    // log_trace("%ld",getpid());
     qnode *temp = t->front;
     if (temp == NULL)
     {
@@ -315,5 +324,4 @@ void initTcb(tcb *t, int initState, thread tid, sigjmp_buf *context)
     t->mutexWait = NULL;
     t->ctx = context;
     t->stack = NULL;
-    t->retVal = NULL;
 }
