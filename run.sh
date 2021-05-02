@@ -50,6 +50,16 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 ${ManyOneTest}/unitTests
 
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+echo -e "\nTesting Scheduling Parameters by running 500x500 multithreaded matrix multiplication"
+tests=(1000 10000 100000 1000000 2000000)
+for i in "${tests[@]}"
+do
+   sec=` expr $i / 1000000 `
+   ms=` expr $i % 1000000 `
+   echo -n "Scheduling Interval $sec s $ms μs => " && { time python3 src/OneOne/tests/script.py 500 | ${ManyOneTest}/matrix multi $i > /dev/null; } |& grep user  
+done
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+
 echo -e "\nRunning Lock Tests\n"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 ${ManyOneTest}/lockTests
