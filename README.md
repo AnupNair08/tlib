@@ -19,16 +19,17 @@
 
 ### Building
 
-```
-Run make in the root directory
-To compile the binaries run
-make tlib
+```sh
+   # Run the root directory of the project
+   make
+   # To compile the binaries run
+   make tlib
 
-To compile the test suite
-make alltest
+   # To compile the test suite
+   make alltest
+   #To run the tests
+   ./run.sh
 
-To run the tests
-./run.sh
 ```
 
 ### Mapping models
@@ -48,36 +49,37 @@ A mapping model refers to the way in which a thread created by the user maps to 
    - The library handles the multiplexing of the threads into a single kernel thread with aspects such as scheduling, managing the context of threads etc.
    - The scheduling and context switching are entirely handled by the library and the kernel sees a single flow of execution.
 
+   
    ```
-                     User space                                            User space
-        ┌─────────────────────────────────┐                   ┌─────────────────────────────────┐
-        │                                 │                   │                                 │
-        │                                 │                   │                                 │
-        │                                 │                   │     ┌─┐  ┌─┐      ┌─┐ ┌─┐       │
-        │                                 │                   │     └┼┘  └┼┘      └┼┘ └┼┘       │
-        │                                 │                   │      │    │        │   │        │
-        │     ┌─┐  ┌─┐      ┌─┐ ┌─┐       │                   │      │    │      ┌─┘   │        │
-        │     └┼┘  └┼┘      └┼┘ └┼┘       │                   │      └───▲▼──────▼─◄───┘        │
-        │      │    │        │   │        │                   │          │   map   │            │
-        │      │    │        │   │        │                   │          │         │            │
-        └──────┼────┼────────┼───┼────────┘                   └──────────┴────┬────┴────────────┘
-               │    │        │   │                                            │
-               │    │        │   │                                            │
-        ┌──────┼────┼────────┼───┼────────┐                   ┌───────────────┼─────────────────┐
-        │      │    │        │   │        │                   │               │                 │
-        │      │    │        │   │        │                   │               │                 │
-        │      │    │        │   │        │                   │               │                 │
-        │      │    │       ┌┼┐ ┌┼┐       │                   │               │                 │
-        │     ┌┼┐  ┌┼┐      └─┘ └─┘       │                   │              ┌┼┐                │
-        │     └─┘  └─┘                    │                   │              └─┘                │
-        │                                 │                   │                                 │
-        │                                 │                   │                                 │
-        │                                 │                   │                                 │
-        └─────────────────────────────────┘                   └─────────────────────────────────┘
-                    Kernel space                                          Kernel space
+                      User space                                            User space
+         ┌─────────────────────────────────┐                   ┌─────────────────────────────────┐
+         │                                 │                   │                                 │
+         │                                 │                   │                                 │
+         │                                 │                   │     ┌─┐  ┌─┐      ┌─┐ ┌─┐       │
+         │                                 │                   │     └┼┘  └┼┘      └┼┘ └┼┘       │
+         │                                 │                   │      │    │        │   │        │
+         │     ┌─┐  ┌─┐      ┌─┐ ┌─┐       │                   │      │    │      ┌─┘   │        │
+         │     └┼┘  └┼┘      └┼┘ └┼┘       │                   │      └───▲▼──────▼─◄───┘        │
+         │      │    │        │   │        │                   │          │   map   │            │
+         │      │    │        │   │        │                   │          │         │            │
+         └──────┼────┼────────┼───┼────────┘                   └──────────┴────┬────┴────────────┘
+                │    │        │   │                                            │
+                │    │        │   │                                            │
+         ┌──────┼────┼────────┼───┼────────┐                   ┌───────────────┼─────────────────┐
+         │      │    │        │   │        │                   │               │                 │
+         │      │    │        │   │        │                   │               │                 │
+         │      │    │        │   │        │                   │               │                 │
+         │      │    │       ┌┼┐ ┌┼┐       │                   │               │                 │
+         │     ┌┼┐  ┌┼┐      └─┘ └─┘       │                   │              ┌┼┐                │
+         │     └─┘  └─┘                    │                   │              └─┘                │
+         │                                 │                   │                                 │
+         │                                 │                   │                                 │
+         │                                 │                   │                                 │
+         └─────────────────────────────────┘                   └─────────────────────────────────┘
+                     Kernel space                                          Kernel space
 
 
-              One One Threading model                                Many One Threading model
+               One One Threading model                                Many One Threading model
 
    ```
 
@@ -174,8 +176,9 @@ The library comes with an extensive test suite for checking the implementation a
 
 To run the tests
 
-```
-Run the following in the root directory of the project
+```sh
+
+#Run the following in the root directory of the project
 
 # Compile and auto run
 make run

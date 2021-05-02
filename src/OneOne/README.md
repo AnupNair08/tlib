@@ -137,26 +137,31 @@ The one to one mapping is used to map each user level thread to an exclusive ker
   - Remainder section
 
   Locks are used to make sure that the access to the shared resouce is serialized. Every thread has to hold a lock in the entry section and then proceed towards the critical section. If however, the lock has already been acquired by some other process, then the other process are made to wait. This ensures that there is an order in which threads update the common resource.
-
+  <div align="center">
     <img src="./assets/lock2.jpg">
+  </div>
 
   `tlib` provides two types of synchronization primitives namely `spinlock` and a `mutex`.
 
   1.  <b>Spinlocks</b>
       Spinlocks are locking mechansims wherein the waiting threads do not sleep, instead they do a busy waiting for the lock, trying to see if the lock is available in successive CPU cycles. The entry section of the code checks if the lock is already acquired by some other thread and if it is then the thread goes in a busy wait loop. Once the lock has been released, the thread can then acquire the lock during one of its cycles.
+
+    <div align="center">
       <img src="./assets/spin.jpg">
+    </div>
 
   2.  <b>Mutex</b>
-      Threads which try to access a critical section are made to acquire a lock in their entry sections. Mutex lock once acquired by a thread leave all other threads trying to acquire the same lock in a sleeping state. This ensures that only one thread has a lock when the critical section is being accessed. Further, once the thread is done with the lock, it releases the lock and all the waiting threads are woken up. The threads then contest for the locks once again. This sleep wait mechanism has been implemented with the help of `futex()` system call and guarantees that operations for waiting on a lock are atomic in nature.
-
-  <img src="./assets/mutex.jpg">
+  Threads which try to access a critical section are made to acquire a lock in their entry sections. Mutex lock once acquired by a thread leave all other threads trying to acquire the same lock in a sleeping state. This ensures that only one thread has a lock when the critical section is being accessed. Further, once the thread is done with the lock, it releases the lock and all the waiting threads are woken up. The threads then contest for the locks once again. This sleep wait mechanism has been implemented with the help of `futex()` system call and guarantees that operations for waiting on a lock are atomic in nature.
+  <div align="center">
+    <img src="./assets/mutex.jpg">
+  </div>
 
 - ## Scheduling policies
 
-  The One One implementation of `tlib` uses a System Contention Scope for scheduling whereas the Many One implementation uses the Process Contention Scope for scheduling. The Process Context Scope is a simple Round Robin based scheduling on either a preemptive or a non preemptive basis. The processes yeild to a CPU when they exit or move to a waiting queue. Also the processes can be moved to the ready queue when the timer interrupt occurs.
+  The One One implementation of `tlib` uses a System Contention Scope for scheduling whereas the Many One implementation uses the Process Contention Scope for scheduling. The Process Contention Scope is a simple Round Robin based scheduling on either a preemptive or a non preemptive basis. The processes yeild to a CPU when they exit or move to a waiting queue. Also the processes can be moved to the ready queue when the timer interrupt occurs.
 
 - ## Performance
-
+  Multithreading can significantly increase performance depending on the type of the application program and the use of threading. The choice of number of threads and threading model used can have an impact on the results based on the computer architecture.
   The following results were obtained on running a matrix multiplication program in a single and a multithreaded model using `tlib`:
 
   | Input Size  | Single Threaded Time | Multi Threaded Time |
@@ -168,4 +173,4 @@ The one to one mapping is used to map each user level thread to an exclusive ker
   | 800 x 800   | 3.307s               | 2.506s              |
   | 1000 x 1000 | 6.555s               | 4.737s              |
 
-  <i>Tested on Linux kernel 5.8, CPU - Ryzen 7 4800H</i>
+  <i>Tested on Linux kernel 5.8.0-50, CPU - AMD Ryzen 7 4800H</i>

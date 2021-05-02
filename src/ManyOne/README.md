@@ -25,7 +25,7 @@ The many to one mapping is used to multiplex all threads onto a single kernel th
 
   <b> translate_address() and glibc pointer mangling: </b>
 
-  glibc implements a security feature called "pointer mangling" or "pointer guard" in order to protect against certain vulnerabilities. Since the context switching happens using functions from the setjmp library, which is also a part of glibc, it is required that the SP, BP and PC set in createContext are mangled with the help of the translate_address() function. The JB_SP, JB_BP and JB_PC values also change depending on the architecture. Both these things introduce some system specificity into the library. This library also assumes that the stack growing direction is downwards, which may not be the case with all architectures.
+  glibc implements a security feature called "pointer mangling" or "pointer guard" in order to protect against certain vulnerabilities. Since the context switching happens using functions from the setjmp library, which is also a part of glibc, it is required that the SP, BP and PC set in `createContext()` are mangled with the help of the `translate_address()` function. The `JB_SP`, `JB_BP` and `JB_PC` values also change depending on the architecture. Both these things introduce some system specificity into the library. This library also assumes that the stack growing direction is downwards, which may not be the case with all architectures.
 
   Creation of a many one thread should take a routine (function pointer) that the thread will execute, arguments to the function call and attibutes that the thread can be initialised with.
 
@@ -118,29 +118,35 @@ The many to one mapping is used to multiplex all threads onto a single kernel th
 
   Locks are used to make sure that the access to the shared resouce is serialized. Every thread has to hold a lock in the entry section and then proceed towards the critical section. If however, the lock has already been acquired by some other process, then the other process are made to wait. This ensures that there is an order in which threads update the common resource.
 
-    <img src="./assets/lock2.jpg">
+    <div align="center">
+      <img src="./assets/lock2.jpg">
+    </div>
 
   `tlib` provides two types of synchronization primitives namely `spinlock` and a `mutex`.
 
   1.  <b>Spinlocks</b>
       Spinlocks are locking mechansims wherein the waiting threads do not sleep, instead they do a busy waiting for the lock, trying to see if the lock is available in successive CPU cycles. The entry section of the code checks if the lock is already acquired by some other thread and if it is then the thread goes in a busy wait loop. Once the lock has been released, the thread can then acquire the lock during one of its cycles.
-
-      <img src="./assets/spin.jpg">
+      <div align="center">
+          <img src="./assets/spin.jpg">
+      </div>
 
   2.  <b>Mutex</b>
       Threads which try to access a critical section are made to acquire a lock in their entry sections. Mutex lock once acquired by a thread leave all other threads trying to acquire the same lock in a sleeping state. This ensures that only one thread has a lock when the critical section is being accessed.
       If threads try to acquire a lock that is already held by another thread, the state of the thread is changed to SLEEPING and they immediately yield control to the scheduler. The mutexWait variable in their TCB is set to the lock address to indicate which lock they are waiting for. Whenever a thread calls spin_release(), it impliicitly calls unlockMutex() which sets the first thread in the queue that was waiting for this lock (has mutexWait set to this lock's address) to RUNNABLE, the next scheduler invocation will ensure that this thread is scheduled since it can now acquire the lock. Only one thread waiting for the lock is woken up since even if all are woken up, only the thread that occurs earlier in the thread queue can acquire the lock.
+       
+        <div align="center">
+            <img src="./assets/mutex.jpg">
+      </div>
 
-      <img src="./assets/mutex.jpg">
-
-  <b>Note: The Many-One code makes lock operations atomic by disabling interrupts at the start of each locking related function and enabling them before the function returns. This is implemented by providing the locking code access to certain scheduler variables by declaring them as extern.</b>
+        <b>Note: The Many-One code makes lock operations atomic by disabling interrupts at the start of each locking related function and enabling them before the function returns. This is implemented by providing the locking code access to certain scheduler variables by declaring them as extern.</b>
 
 - ## Scheduling Policies
 
-  The One One implementation of `tlib` uses a System Contention Scope for scheduling whereas the Many One implementation uses the Process Contention Scope for scheduling. The Process Context Scope is a simple Round Robin based scheduling on either a preemptive or a non preemptive basis. The processes yeild to a CPU when they exit or move to a waiting queue. Also the processes can be moved to the ready queue when the timer interrupt occurs.
+  The One One implementation of `tlib` uses a System Contention Scope for scheduling whereas the Many One implementation uses the Process Contention Scope for scheduling. The Process Contention Scope is a simple Round Robin based scheduling on either a preemptive or a non preemptive basis. The processes yeild to a CPU when they exit or move to a waiting queue. Also the processes can be moved to the ready queue when the timer interrupt occurs.
 
 - ## Performance
 
+  Multithreading can significantly increase performance depending on the type of the application program and the use of threading. The choice of number of threads and threading model used can have an impact on the results based on the computer architecture.
   The following results were obtained on running a matrix multiplication program in a single and a multithreaded model using `tlib`:
 
   | Input Size  | Single Threaded Time | Multi Threaded Time |
