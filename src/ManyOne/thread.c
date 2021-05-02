@@ -1,7 +1,7 @@
 /**
  * @file thread.c
  * @author Hrishikesh Athalye & Anup Nair
- * @brief Implementation of thread APIs in many many mapping
+ * @brief Implementation of thread APIs in many one mapping
  * @version 0.1
  * @date 2021-05-02
  * 
