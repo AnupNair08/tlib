@@ -1,7 +1,7 @@
 /**
  * @file locks.h
  * @author Hrishikesh Athalye & Anup Nair
- * @brief 
+ * @brief API interface for synchronization primitives
  * @version 0.1
  * @date 2021-04-15
  * 

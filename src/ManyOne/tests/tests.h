@@ -1,3 +1,14 @@
+/**
+ * @file tests.h
+ * @author Anup Nair & Hrishikesh Athalye
+ * @brief Helper functions for test suite
+ * @version 0.1
+ * @date 2021-05-02
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
+
 #define RED "\033[1;31m"
 #define RESET "\033[0m"
 #define GREEN "\e[0;32m"

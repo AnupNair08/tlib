@@ -1,5 +1,15 @@
+/**
+ * @file locks.c
+ * @author Hrishikesh Athalye & Anup Nair
+ * @brief Implementation of synchronization primitives
+ * @version 0.1
+ * @date 2021-05-02
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include "utils.h"
-#include "errno.h"
+#include <errno.h>
 
 /**
  * @brief TCB of current running process 

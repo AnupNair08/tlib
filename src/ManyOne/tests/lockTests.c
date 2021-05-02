@@ -1,3 +1,13 @@
+/**
+ * @file lockTests.c
+ * @author Hrishikesh Athalye & Anup Nair 
+ * @brief Tests for synchronization primitives
+ * @version 0.1
+ * @date 2021-05-02
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include <stdio.h>
 #include <unistd.h>
 #ifdef BUILD
