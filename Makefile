@@ -1,3 +1,4 @@
+# Flags and constants
 CC := gcc
 CFLAGS := -g -ggdb3
 SUBDIRS := doxygen bin bin/ManyOne bin/OneOne
@@ -10,7 +11,7 @@ TESTSONEONE := src/OneOne/tests/*.c
 BINMANYONE := bin/ManyOne/
 BINONEONE := bin/OneOne/
 
-.PHONY: init clean alltest tlib docs
+.PHONY: init clean alltest tlib docs run
 
 # Make initliazes all the needed directories for the project
 init:

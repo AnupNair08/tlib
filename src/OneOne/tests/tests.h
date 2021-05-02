@@ -23,6 +23,6 @@
 #define LINE printf("---------------------------------------------------------------------------------------------\n")
 
 #define safeprintf(printlock, f_, ...) \
-    spin_acquire(printlock);           \
-    printf((f_), ##__VA_ARGS__);       \
-    spin_release(printlock);
+        spin_acquire(printlock);       \
+        printf((f_), ##__VA_ARGS__);   \
+        spin_release(printlock);
