@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -18,6 +19,7 @@
 
 int **arr1 = NULL, **arr2 = NULL, **res = NULL;
 int r1, r2, c1, c2;
+thread_attr *a = NULL;
 
 int readarray(int ***arr, int r, int c)
 {
@@ -78,10 +80,19 @@ void multiplySingle(int **mat1, int **mat2, int **res, int a, int b, int c)
 
 int main(int argc, char *argv[])
 {
+    //check if sched params are given
+    if (argc == 3)
+    {
+        a = (thread_attr *)malloc(sizeof(thread_attr));
+        thread_attr_init(a);
+        a->schedInterval.sc = atoi(argv[2]) / 1000000;
+        a->schedInterval.ms = atoi(argv[2]) % 1000000;
+    }
     scanf("%d", &r1);
     scanf("%d", &c1);
     if (readarray(&arr1, r1, c1))
     {
+        thread_attr_destroy(a);
         return errno;
     }
     scanf("%d", &r2);
@@ -89,16 +100,19 @@ int main(int argc, char *argv[])
     if (c1 != r2)
     {
         printf("Incompatible arrays, multiplication not possible.\n");
+        thread_attr_destroy(a);
         return 0;
     }
     if (readarray(&arr2, r2, c2))
     {
+        thread_attr_destroy(a);
         return errno;
     }
     res = (int **)malloc(sizeof(int *) * r1);
     if (res == NULL)
     {
         perror("Error in allocating result array");
+        thread_attr_destroy(a);
         return errno;
     }
     for (int i = 0; i < r1; i++)
@@ -107,6 +121,7 @@ int main(int argc, char *argv[])
         if (res[i] == NULL)
         {
             perror("Error");
+            thread_attr_destroy(a);
             return errno;
         }
     }
@@ -120,7 +135,7 @@ int main(int argc, char *argv[])
         }
         for (int i = 0; i < r1; i++)
         {
-            thread_create(&threads[i], NULL, partMatMul, (void *)(args + i));
+            thread_create(&threads[i], a, partMatMul, (void *)(args + i));
         }
         for (int i = 0; i < r1; i++)
         {
@@ -155,5 +170,6 @@ int main(int argc, char *argv[])
     {
         multiplySingle(arr1, arr2, res, r1, r2, c2);
     }
+    thread_attr_destroy(a);
     return 0;
 }
