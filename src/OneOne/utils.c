@@ -54,6 +54,7 @@ node *singlyLLInsert(singlyLL *ll, unsigned long int tid)
     }
     tmp->tid = tid;
     tmp->next = NULL;
+    tmp->retVal = NULL;
     if (ll->head == NULL)
     {
         ll->head = ll->tail = tmp;
@@ -165,7 +166,6 @@ node *returnCustomNode(singlyLL *ll, unsigned long int tid)
     node *tmp = ll->head;
     while (tmp != NULL)
     {
-        // printf("returnCustomNode %d %d %d\n", tid, tmp->tid, tmp->tidCpy);
         if (tmp->tidCpy == tid)
         {
             return tmp;

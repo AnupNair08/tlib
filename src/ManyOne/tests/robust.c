@@ -1,3 +1,13 @@
+/**
+ * @file robust.c
+ * @author Anup Nair & Hrishikesh Athalye
+ * @brief Test suite for handling failures and error conditions
+ * @version 0.1
+ * @date 2021-05-02
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include <stdio.h>
 #include <unistd.h>
 #ifdef BUILD

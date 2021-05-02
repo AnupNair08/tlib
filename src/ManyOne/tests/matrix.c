@@ -1,3 +1,13 @@
+/**
+ * @file matrix.c
+ * @author Hrishikesh Athalye
+ * @brief Matrix Multiplication program to test single and multi threaded performance
+ * @version 0.1
+ * @date 2021-05-02
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include <stdio.h>
 #include <unistd.h>
 #ifdef BUILD
@@ -10,21 +20,17 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include "tests.h"
-typedef struct arg_struct
-{
-    int rowFrom;
-    int rowTo;
-    int numCols1;
-    int numCols2;
-    int **res;
-    int **arr1;
-    int **arr2;
-} arg_struct;
+
+int **arr1 = NULL, **arr2 = NULL, **res = NULL;
+int r1, r2, c1, c2;
+thread_attr *a = NULL;
+
 int readarray(int ***arr, int r, int c)
 {
     *arr = (int **)malloc(r * sizeof(int *));
@@ -51,31 +57,19 @@ int readarray(int ***arr, int r, int c)
     }
     return 0;
 }
-void *partMatMul(void *argsStruct)
+
+void *partMatMul(void *index)
 {
-    arg_struct *args = (arg_struct *)argsStruct;
-    int rowFrom = args->rowFrom;
-    int rowTo = args->rowTo;
-    int numCols1 = args->numCols1;
-    int numCols2 = args->numCols2;
-    int **arr1 = args->arr1;
-    int **arr2 = args->arr2;
     int sum = 0;
-    if (rowFrom == -1 || rowTo == -1)
+    int i = *((int *)index);
+    for (int j = 0; j < c2; j++)
     {
-        return NULL;
-    }
-    for (int i = rowFrom; i <= rowTo; i++)
-    {
-        for (int j = 0; j < numCols2; j++)
+        sum = 0;
+        for (int k = 0; k < c1; k++)
         {
-            sum = 0;
-            for (int k = 0; k < numCols1; k++)
-            {
-                sum += arr1[i][k] * arr2[k][j];
-            }
-            (args->res)[i][j] = sum;
+            sum += arr1[i][k] * arr2[k][j];
         }
+        res[i][j] = sum;
     }
     return NULL;
 }
@@ -96,12 +90,19 @@ void multiplySingle(int **mat1, int **mat2, int **res, int a, int b, int c)
 
 int main(int argc, char *argv[])
 {
-    int r1, r2, c1, c2, **res;
-    int **arr1 = NULL, **arr2 = NULL;
+    //check if sched params are given
+    if (argc == 3)
+    {
+        a = (thread_attr *)malloc(sizeof(thread_attr));
+        thread_attr_init(a);
+        a->schedInterval.sc = atoi(argv[2]) / 1000000;
+        a->schedInterval.ms = atoi(argv[2]) % 1000000;
+    }
     scanf("%d", &r1);
     scanf("%d", &c1);
     if (readarray(&arr1, r1, c1))
     {
+        thread_attr_destroy(a);
         return errno;
     }
     scanf("%d", &r2);
@@ -109,16 +110,19 @@ int main(int argc, char *argv[])
     if (c1 != r2)
     {
         printf("Incompatible arrays, multiplication not possible.\n");
+        thread_attr_destroy(a);
         return 0;
     }
     if (readarray(&arr2, r2, c2))
     {
+        thread_attr_destroy(a);
         return errno;
     }
     res = (int **)malloc(sizeof(int *) * r1);
     if (res == NULL)
     {
         perror("Error in allocating result array");
+        thread_attr_destroy(a);
         return errno;
     }
     for (int i = 0; i < r1; i++)
@@ -127,50 +131,31 @@ int main(int argc, char *argv[])
         if (res[i] == NULL)
         {
             perror("Error");
+            thread_attr_destroy(a);
             return errno;
         }
     }
     if (strcmp(argv[1], "multi") == 0)
     {
-
-        struct arg_struct args[3];
-        int row_parts = r1 / 3;
-        for (int i = 0; i < 3; i++)
+        thread threads[r1];
+        int args[r1];
+        for (int i = 0; i < r1; i++)
         {
-            args[i].rowFrom = -1;
-            args[i].rowTo = -1;
-            args[i].res = res;
-            args[i].arr1 = arr1;
-            args[i].arr2 = arr2;
-            args[i].numCols1 = c1;
-            args[i].numCols2 = c2;
+            args[i] = i;
         }
-        args[0].rowFrom = 0;
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < r1; i++)
         {
-            args[i].rowTo = row_parts - 1;
+            thread_create(&threads[i], a, partMatMul, (void *)(args + i));
         }
-        for (int i = 0; i < r1 % 3; i++)
-        {
-            args[i].rowTo += 1;
-        }
-        for (int i = 1; i <= 2; i++)
-        {
-            args[i].rowFrom = args[i - 1].rowTo + 1;
-            args[i].rowTo += args[i].rowFrom;
-        }
-        thread threads[3];
-        for (int i = 0; i < 3; i++)
-        {
-            thread_create(&threads[i], NULL, partMatMul, &args[i]);
-        }
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < r1; i++)
         {
             thread_join(threads[i], NULL);
         }
         // printf("%d %d\n", r1, c2);
-        // for(int i = 0; i < r1; i++){
-        //     for(int j = 0; j < c2; j++){
+        // for (int i = 0; i < r1; i++)
+        // {
+        //     for (int j = 0; j < c2; j++)
+        //     {
         //         printf("%d ", res[i][j]);
         //     }
         //     printf("\n");
@@ -195,5 +180,6 @@ int main(int argc, char *argv[])
     {
         multiplySingle(arr1, arr2, res, r1, r2, c2);
     }
+    thread_attr_destroy(a);
     return 0;
 }

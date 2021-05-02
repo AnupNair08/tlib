@@ -10,6 +10,7 @@
  */
 #include <stdio.h>
 #include <stdatomic.h>
+#include "tests.h"
 #include "../thread.h"
 
 mutex_t lock;
@@ -19,11 +20,6 @@ spin_t printlock;
 int readers = 0;
 int numReadersIn = 0;
 int numWritersIn = 0;
-
-#define safeprintf(printlock, f_, ...) \
-    spin_acquire(printlock);           \
-    printf((f_), ##__VA_ARGS__);       \
-    spin_release(printlock);
 
 void f1()
 {

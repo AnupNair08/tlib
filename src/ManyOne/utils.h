@@ -26,7 +26,7 @@ typedef struct tcb
     int *waiters; //list of all waiters on this process
     int numWaiters;
     mutex_t *mutexWait;
-    int *pendingSig; // Implement as a queue for easy deletion
+    int *pendingSig;
     int numPendingSig;
     funcargs *args;
 } tcb;

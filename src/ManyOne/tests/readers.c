@@ -1,3 +1,13 @@
+/**
+ * @file readers.c
+ * @author Anup Nair & Hrishikesh Athalye
+ * @brief 	Readers writers synchronization problem
+ * @version 0.1
+ * @date 2021-05-02
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include <stdio.h>
 #include "../thread.h"
 spin_t lock;

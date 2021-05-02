@@ -30,6 +30,7 @@ typedef struct thread_attr
     void *stack;
     size_t stackSize;
     schedParams schedInterval;
+    size_t guardSize;
 } thread_attr;
 
 // Attribute modification APIs

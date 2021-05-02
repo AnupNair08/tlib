@@ -27,7 +27,6 @@ enum thread_state
 {
     RUNNING,
     WAITING,
-    EXITED,
     RUNNABLE
 };
 
@@ -45,8 +44,7 @@ typedef struct funcargs
     void *arg;
 } funcargs;
 
-
-// Thread APIs 
+// Thread APIs
 int createManyOne(thread *, void *, void *, void *);
 static void initManyOne();
 static void *allocStack(size_t, size_t);

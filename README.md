@@ -49,7 +49,6 @@ A mapping model refers to the way in which a thread created by the user maps to 
    - The library handles the multiplexing of the threads into a single kernel thread with aspects such as scheduling, managing the context of threads etc.
    - The scheduling and context switching are entirely handled by the library and the kernel sees a single flow of execution.
 
-   
    ```
                       User space                                            User space
          ┌─────────────────────────────────┐                   ┌─────────────────────────────────┐

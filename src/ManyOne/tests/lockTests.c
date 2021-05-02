@@ -1,3 +1,13 @@
+/**
+ * @file lockTests.c
+ * @author Hrishikesh Athalye & Anup Nair 
+ * @brief Tests for synchronization primitives
+ * @version 0.1
+ * @date 2021-05-02
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include <stdio.h>
 #include <unistd.h>
 #ifdef BUILD
@@ -16,67 +26,13 @@ mutex_t sleeplock;
 spin_t spinlock;
 long c1, c2, c, run = 1;
 
-void routine1(void *l)
-{
-    if (l)
-        spin_acquire((spin_t *)l);
-    printf("Routine 1 Before: %d\n", spinTest);
-    refstring[0] = spinTest;
-    spinTest++;
-    printf("Routine 1 After: %d\n", spinTest);
-    refstring[1] = spinTest;
-    if (l)
-        spin_release((spin_t *)l);
-}
-
-void routine2(void *l)
-{
-    if (l)
-        spin_acquire((spin_t *)l);
-    printf("Routine 2 Before: %d\n", spinTest);
-    refstring[2] = spinTest;
-    spinTest++;
-    printf("Routine 2 After: %d\n", spinTest);
-    refstring[3] = spinTest;
-    if (l)
-        spin_release((spin_t *)l);
-}
-
-void testLocks(int type)
-{
-    thread t1, t2;
-    spin_t lock;
-    spin_t *temp = NULL;
-    if (type)
-    {
-        spin_init(&lock);
-        temp = &lock;
-    }
-    thread_create(&t1, NULL, routine1, (void *)temp);
-    thread_create(&t2, NULL, routine2, (void *)temp);
-    thread_join(t1, NULL);
-    thread_join(t2, NULL);
-
-    printf("Value of global is %d\n", spinTest);
-    spinTest = 0;
-}
-
-int isConsistent()
-{
-    // for(int i = 0;i < 4; i++) printf("%d\n",refstring[i]);
-    return (refstring[0] == 0 && refstring[1] == 1 && refstring[2] == 1 && refstring[3] == 2) ||
-           (refstring[0] == 1 && refstring[1] == 2 && refstring[2] == 0 && refstring[3] == 1);
-}
-
 void *f1(void *lock)
 {
     while (run)
     {
-        // log_trace("f1 scheduled");
         c1++;
         mutex_acquire((mutex_t *)lock);
         c++;
-        // // log_trace("value of c: %d", c);
         mutex_release((mutex_t *)lock);
     }
 }
@@ -84,7 +40,6 @@ void *f2(void *lock)
 {
     while (run)
     {
-        // log_trace("f2");
         c2++;
         mutex_acquire((mutex_t *)lock);
         c++;
@@ -106,7 +61,7 @@ int testMutex()
     thread_join(t1, NULL);
     thread_join(t2, NULL);
     printf("\nValues after test are (c1 + c2)=%ld c=%ld\n", c1 + c2, c);
-    if (c1 + c2 - c > 2)
+    if (c1 + c2 - c != 0)
         printf(RED "Test failed\n" RESET);
     else
         printf(GREEN "Test passed\n" RESET);
@@ -151,7 +106,7 @@ int testSpin()
     thread_join(t1, NULL);
     thread_join(t2, NULL);
     printf("\nValues after test are (c1 + c2)=%ld c=%ld\n", c1 + c2, c);
-    if (c1 + c2 - c > 2)
+    if (c1 + c2 - c != 0)
         printf(RED "Test failed\n" RESET);
     else
         printf(GREEN "Test passed\n" RESET);
@@ -161,21 +116,7 @@ int testSpin()
 int main()
 {
     printf("tlib Synchronization Tests\n");
-    int i = 1;
-    // printf(GREEN"\nTesting with Locks\n"RESET);
-    // while(1){
-    //     testLocks(WITH_LOCKS);
-    //     if(!isConsistent()) {
-    //         log_error("Inconsistent values of global\nTest Failed\n");
-    //         break;
-    //     }
-    //     sleep(1);
-    //     log_trace("Consistent values of global in run %d",i);
-    //     i++;
-    //     if(i > 5) break;
-    // }
     testMutex();
     testSpin();
-    
     return 0;
 }

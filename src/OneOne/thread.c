@@ -51,7 +51,6 @@ void cleanup()
  */
 static void init()
 {
-    // printf("Library initialised\n");
     spin_init(&__globalLock);
     INIT_SIGNALS
     singlyLLInit(&__tidList);
@@ -278,7 +277,8 @@ int thread_join(thread t, void **retLocation)
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
     if (retLocation)
     {
-        *retLocation = getReturnValue(&__tidList, t);
+        node *insertedNode = returnCustomNode(&__tidList, t);
+        *retLocation = insertedNode->retVal;
     }
     spin_release(&__globalLock);
     return ret;
@@ -303,10 +303,11 @@ void thread_exit(void *ret)
     }
     if (ret)
     {
-        ret = getReturnValue(&__tidList, gettid());
+        node *insertedNode = returnCustomNode(&__tidList, gettid());
+        insertedNode->retVal = ret;
     }
-    node *insertedNode = returnCustomNode(&__tidList, gettid());
     syscall(SYS_futex, addr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
     spin_release(&__globalLock);
+    kill(SIGINT,gettid());
     return;
 }
