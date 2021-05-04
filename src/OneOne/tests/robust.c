@@ -49,11 +49,11 @@ void routine2()
     int ret = mutex_release(&lock);
     if (ret == ENOTRECOVERABLE)
     {
-        TESTPASS
+        TESTFAIL
     }
     else
     {
-        TESTFAIL
+        TESTPASS
     }
 }
 int i = 0;

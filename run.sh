@@ -37,6 +37,10 @@ do
 done
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 
+
+echo -e "\nRunning robust tests\n"
+${OneOneTest}/robust
+
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 echo -e "\nOne One Tests Finished\n"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
@@ -82,6 +86,9 @@ do
    echo -n "Input size $i x $i => " && { time python3 src/OneOne/tests/script.py $i | ${ManyOneTest}/matrix multi > /dev/null; } |& grep real  
 done
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+
+echo -e "\nRunning robust tests\n"
+${ManyOneTest}/robust
 
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
 echo -e "\nMany One Tests Finished\n"

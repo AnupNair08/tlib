@@ -157,7 +157,7 @@ void raiseSignals()
         sigaddset(mask, __curproc->pendingSig[i]);
         sigprocmask(SIG_UNBLOCK, mask, NULL);
         __curproc->numPendingSig -= 1;
-        kill(getpid(), SIGTERM);
+        kill(getpid(), __curproc->pendingSig[i]);
     }
     setSignals();
     free(mask);
