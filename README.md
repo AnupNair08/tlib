@@ -1,6 +1,12 @@
-<div style = "text-align:center">
+<div align="center">
 	<h1>tlib</h1>
-	<h4>A multithreading library for Linux</h4> 
+   <h4>A multithreading library for Unix-like POSIX compliant systems</h4> 
+   <img src="https://img.shields.io/badge/version-1.1-green">
+   <img src="https://img.shields.io/badge/license-MIT-important">
+   <img src="https://img.shields.io/github/issues/AnupNair08/tlib">
+</div>
+<div align="center">
+   <img align="center" src="assets/logo.png" >
 </div>
 
 ## Contents
@@ -15,7 +21,7 @@
 
 ### About
 
-`tlib` is a program independent multithreading library that lets programs control multiple flows of work that run in an interleaved manner and supports user level threads in either a `One-One` mapping model or a `Many-One` mapping model. `tlib` is available for Unix-like POSIX conformant operating systems.
+`tlib` is a multithreading library that lets programs control multiple flows of work that run in an interleaved manner and supports user level threads in either a `One-One` mapping model or a `Many-One` mapping model. `tlib` is available for Unix-like POSIX conformant operating systems.
 
 ### Building
 
@@ -27,8 +33,11 @@
 
    # To compile the test suite
    make alltest
-   #To run the tests
+   # To run the tests
    ./run.sh
+
+   # To generate API docs
+   make docs
 
 ```
 
@@ -87,54 +96,54 @@ A mapping model refers to the way in which a thread created by the user maps to 
 - `tlib` provides two mapping models and the desired model can be chosen without changing any API calls. The implementation remains abstract to the user programs.
 - Each of the two models provides the following set of API calls:
 
-1. <b>Thread APIs</b>
+   1. <b>Thread APIs</b>
 
-   1. <b>Thread Creation</b>
+      1. <b>Thread Creation</b>
 
-   | Function          | Description                                |
-   | ----------------- | ------------------------------------------ |
-   | `thread_create()` | Creates a new thread                       |
-   | `thread_join()`   | Waits for a callee thread to be terminated |
-   | `thread_kill()`   | Send a signal to a specific thread         |
-   | `thread_exit()`   | Exit the thread routine                    |
+         | Function          | Description                                |
+         | ----------------- | ------------------------------------------ |
+         | `thread_create()` | Creates a new thread                       |
+         | `thread_join()`   | Waits for a callee thread to be terminated |
+         | `thread_kill()`   | Send a signal to a specific thread         |
+         | `thread_exit()`   | Exit the thread routine                    |
 
-   2. <b>Thread Attribute handling</b>
+      2. <b>Thread Attribute handling</b>
 
-   | Function                 | Description                                         |
-   | ------------------------ | --------------------------------------------------- |
-   | `thread_attr_init()`     | Initialize an attribute object                      |
-   | `thread_attr_destroy()`  | Destroy an attribute object                         |
-   | `thread_attr_setStack()` | Set a user defined stack size                       |
-   | `thread_attr_getStack()` | Get the size of the current thread stack            |
-   | `thread_attr_setGuard()` | Set a user defined guard page size                  |
-   | `thread_attr_getGuard()` | Get the size of the current thread stack guard page |
+         | Function                 | Description                                         |
+         | ------------------------ | --------------------------------------------------- |
+         | `thread_attr_init()`     | Initialize an attribute object                      |
+         | `thread_attr_destroy()`  | Destroy an attribute object                         |
+         | `thread_attr_setStack()` | Set a user defined stack size                       |
+         | `thread_attr_getStack()` | Get the size of the current thread stack            |
+         | `thread_attr_setGuard()` | Set a user defined guard page size                  |
+         | `thread_attr_getGuard()` | Get the size of the current thread stack guard page |
 
-2. <b>Synchronization Primitves APIs</b>
+   2. <b>Synchronization Primitves APIs</b>
 
-   1. <b>Spin Lock</b>
+      1. <b>Spin Lock</b>
 
-   | Function         | Description                         |
-   | ---------------- | ----------------------------------- |
-   | `spin_init()`    | Initialize a spinlock object        |
-   | `spin_acquire()` | Acquire a spinlock                  |
-   | `spin_release()` | Release a spinlock                  |
-   | `spin_trylock()` | Check if a spinlock can be acquired |
+         | Function         | Description                         |
+         | ---------------- | ----------------------------------- |
+         | `spin_init()`    | Initialize a spinlock object        |
+         | `spin_acquire()` | Acquire a spinlock                  |
+         | `spin_release()` | Release a spinlock                  |
+         | `spin_trylock()` | Check if a spinlock can be acquired |
 
-   2. <b>Mutex Lock</b>
+      2. <b>Mutex Lock</b>
 
-   | Function          | Description                      |
-   | ----------------- | -------------------------------- |
-   | `mutex_init()`    | Initialize a mutex object        |
-   | `mutex_acquire()` | Acquire a mutex                  |
-   | `mutex_release()` | Release a mutex                  |
-   | `mutex_trylock()` | Check if a mutex can be acquired |
+         | Function          | Description                      |
+         | ----------------- | -------------------------------- |
+         | `mutex_init()`    | Initialize a mutex object        |
+         | `mutex_acquire()` | Acquire a mutex                  |
+         | `mutex_release()` | Release a mutex                  |
+         | `mutex_trylock()` | Check if a mutex can be acquired |
 
 ## Usage
 
 To use tlib in your programs, do the following:
 
 ```c
-// Use on of the macros to use the desired mapping
+// Use one of the macros to use the desired mapping
 #define ONE_ONE
 // #define MANY_ONE
 #include <stdio.h>
@@ -171,27 +180,27 @@ int main(){
 
 ## Running Tests
 
-The library comes with an extensive test suite for checking the implementation and testing the performance of the library. Each implementation has a set of unit tests that check the correctness of the APIs. There is a test for checking the synchronization primitves and a classic program of readers writers to check the working of synchronization primitives namely mutex and spinlock. The test suite also includes a robust testing program that checks for the error handling and incorrect input cases. Finally there is a benchmark program which is a matrix multiplication program in the single and multi-threaded environments to compare the performance of using a threading library.
+The library comes with an extensive test suite for checking the implementation and testing the performance of the library. Each implementation has a set of unit tests that check the correctness of the APIs. There is a test for checking the synchronization primitves and a classic program of readers writers to check the working of synchronization primitives namely mutex and spinlock. 
+The test suite also includes a robust testing program that checks for the error handling and incorrect input cases. Finally there is a benchmark program which is a matrix multiplication program in the single and multi-threaded environments to compare the performance of using a threading library.
 
-To run the tests
+To run the tests:
+   ```sh
 
-```sh
+   #Run the following in the root directory of the project
 
-#Run the following in the root directory of the project
+   # Compile and auto run
+   make run
 
-# Compile and auto run
-make run
-
-# Compile all binaries
-make alltest
-# Start the test suite
-./run.sh
+   # Compile all binaries
+   make alltest
+   # Start the test suite
+   ./run.sh
 
 
-# Check for memory leaks
-make check-leak
+   # Check for memory leaks
+   make check-leak
 
-```
+   ```
 
 The shell script will test all the functionalities mentioned in the test suite above. In addition, the memory leak checker uses valgrind to look at potential memory leaks in the test code.
 
