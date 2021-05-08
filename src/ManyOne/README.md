@@ -132,11 +132,13 @@ The many to one mapping is used to multiplex all threads onto a single kernel th
 
   2.  <b>Mutex</b>
       Threads which try to access a critical section are made to acquire a lock in their entry sections. Mutex lock once acquired by a thread leave all other threads trying to acquire the same lock in a sleeping state. This ensures that only one thread has a lock when the critical section is being accessed.
-      If threads try to acquire a lock that is already held by another thread, the state of the thread is changed to SLEEPING and they immediately yield control to the scheduler. The mutexWait variable in their TCB is set to the lock address to indicate which lock they are waiting for. Whenever a thread calls spin_release(), it impliicitly calls unlockMutex() which sets the first thread in the queue that was waiting for this lock (has mutexWait set to this lock's address) to RUNNABLE, the next scheduler invocation will ensure that this thread is scheduled since it can now acquire the lock. Only one thread waiting for the lock is woken up since even if all are woken up, only the thread that occurs earlier in the thread queue can acquire the lock.
+      If threads try to acquire a lock that is already held by another thread, the state of the thread is changed to SLEEPING and they immediately yield control to the scheduler. The mutexWait variable in their TCB is set to the lock address to indicate which lock they are waiting for. Whenever a thread calls mutex_release(), it implicitly calls unlockMutex() which sets the first thread in the queue that was waiting for this lock (has mutexWait set to this lock's address) to RUNNABLE, the next scheduler invocation will ensure that this thread is scheduled since it can now acquire the lock. Only one thread waiting for the lock is woken up since even if all are woken up, only the thread that occurs earlier in the thread queue can acquire the lock.
        
         <div align="center">
             <img src="./assets/mutex.jpg">
       </div>
+      
+      The Many-One implementation also ensures that only a thread which has acquired a mutex or spinlock can release it. If this condition is not met, the unlock functions return an error number.
 
         <b>Note: The Many-One code makes lock operations atomic by disabling interrupts at the start of each locking related function and enabling them before the function returns. This is implemented by providing the locking code access to certain scheduler variables by declaring them as extern.</b>
 
